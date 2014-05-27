@@ -1,0 +1,969 @@
+Index: webrtc.gyp
+===================================================================
+--- webrtc.gyp	(revision 4846)
++++ webrtc.gyp	(working copy)
+@@ -17,6 +17,7 @@
+       'video_engine/video_engine.gyp:*',
+       'voice_engine/voice_engine.gyp:*',
+       '<(webrtc_vp8_dir)/vp8.gyp:*',
++      '<(webrtc_h264_dir)/h264.gyp:*',
+     ],
+   },
+   'targets': [
+Index: voice_engine/output_mixer.cc
+===================================================================
+--- voice_engine/output_mixer.cc	(revision 4846)
++++ voice_engine/output_mixer.cc	(working copy)
+@@ -29,8 +29,8 @@
+                            const AudioFrame** uniqueAudioFrames,
+                            uint32_t size)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,-1),
+-                 "OutputMixer::NewMixedAudio(id=%d, size=%u)", id, size);
++    //WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,-1),
++    //             "OutputMixer::NewMixedAudio(id=%d, size=%u)", id, size);
+ 
+     _audioFrame.CopyFrom(generalAudioFrame);
+     _audioFrame.id_ = id;
+@@ -513,9 +513,9 @@
+ int OutputMixer::GetMixedAudio(int sample_rate_hz,
+                                int num_channels,
+                                AudioFrame* frame) {
+-  WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,-1),
+-               "OutputMixer::GetMixedAudio(sample_rate_hz=%d, num_channels=%d)",
+-               sample_rate_hz, num_channels);
++  //WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,-1),
++  //             "OutputMixer::GetMixedAudio(sample_rate_hz=%d, num_channels=%d)",
++  //             sample_rate_hz, num_channels);
+ 
+   // --- Record playout if enabled
+   {
+Index: voice_engine/transmit_mixer.cc
+===================================================================
+--- voice_engine/transmit_mixer.cc	(revision 4846)
++++ voice_engine/transmit_mixer.cc	(working copy)
+@@ -37,8 +37,8 @@
+ void
+ TransmitMixer::OnPeriodicProcess()
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId, -1),
+-                 "TransmitMixer::OnPeriodicProcess()");
++    //WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId, -1),
++    //             "TransmitMixer::OnPeriodicProcess()");
+ 
+ #if defined(WEBRTC_VOICE_ENGINE_TYPING_DETECTION)
+     if (_typingNoiseWarningPending)
+Index: voice_engine/channel.cc
+===================================================================
+--- voice_engine/channel.cc	(revision 4846)
++++ voice_engine/channel.cc	(working copy)
+@@ -670,8 +670,8 @@
+ 
+ int32_t Channel::GetAudioFrame(int32_t id, AudioFrame& audioFrame)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,_channelId),
+-                 "Channel::GetAudioFrame(id=%d)", id);
++    //WEBRTC_TRACE(kTraceStream, kTraceVoice, VoEId(_instanceId,_channelId),
++    //             "Channel::GetAudioFrame(id=%d)", id);
+ 
+     // Get 10ms raw PCM data from the ACM (mixer limits output frequency)
+     if (audio_coding_->PlayoutData10Ms(audioFrame.sample_rate_hz_,
+Index: video_engine/vie_channel.cc
+===================================================================
+--- video_engine/vie_channel.cc	(revision 4846)
++++ video_engine/vie_channel.cc	(working copy)
+@@ -212,6 +212,21 @@
+     assert(false);
+   }
+ #endif
++#ifdef VIDEOCODEC_H264
++  VideoCodec video_codec264;
++  if (vcm_.Codec(kVideoCodecH264, &video_codec264) == VCM_OK) {
++    rtp_rtcp_->RegisterSendPayload(video_codec264);
++    // TODO(holmer): Can we call SetReceiveCodec() here instead?
++    if (!vie_receiver_.RegisterPayload(video_codec264)) {
++      return -1;
++    }
++    vcm_.RegisterReceiveCodec(&video_codec264, number_of_cores_);
++    vcm_.RegisterSendCodec(&video_codec264, number_of_cores_,
++                           rtp_rtcp_->MaxDataPayloadLength());
++  } else {
++    assert(false);
++  }
++#endif
+ 
+   return 0;
+ }
+Index: video_engine/vie_codec_impl.cc
+===================================================================
+--- video_engine/vie_codec_impl.cc	(revision 4846)
++++ video_engine/vie_codec_impl.cc	(working copy)
+@@ -743,6 +743,8 @@
+     return false;
+   } else if ((video_codec.codecType == kVideoCodecVP8 &&
+               strncmp(video_codec.plName, "VP8", 4) == 0) ||
++             (video_codec.codecType == kVideoCodecH264 &&
++              strncmp(video_codec.plName, "H264", 4) == 0) ||
+              (video_codec.codecType == kVideoCodecI420 &&
+               strncmp(video_codec.plName, "I420", 4) == 0)) {
+     // OK.
+Index: video_engine/vie_encoder.cc
+===================================================================
+--- video_engine/vie_encoder.cc	(revision 4846)
++++ video_engine/vie_encoder.cc	(working copy)
+@@ -222,6 +222,28 @@
+                  "%s RegisterSendPayload failure", __FUNCTION__);
+     return false;
+   }
++#elif defined(VIDEOCODEC_H264)
++  VideoCodec video_codec;
++  if (vcm_.Codec(webrtc::kVideoCodecH264, &video_codec) != VCM_OK) {
++    WEBRTC_TRACE(webrtc::kTraceError, webrtc::kTraceVideo,
++                 ViEId(engine_id_, channel_id_),
++                 "%s Codec failure", __FUNCTION__);
++    return false;
++  }
++  send_padding_ = video_codec.numberOfSimulcastStreams > 1;
++  if (vcm_.RegisterSendCodec(&video_codec, number_of_cores_,
++                             default_rtp_rtcp_->MaxDataPayloadLength()) != 0) {
++    WEBRTC_TRACE(webrtc::kTraceError, webrtc::kTraceVideo,
++                 ViEId(engine_id_, channel_id_),
++                 "%s RegisterSendCodec failure", __FUNCTION__);
++    return false;
++  }
++  if (default_rtp_rtcp_->RegisterSendPayload(video_codec) != 0) {
++    WEBRTC_TRACE(webrtc::kTraceError, webrtc::kTraceVideo,
++                 ViEId(engine_id_, channel_id_),
++                 "%s RegisterSendPayload failure", __FUNCTION__);
++    return false;
++  }
+ #else
+   VideoCodec video_codec;
+   if (vcm_.Codec(webrtc::kVideoCodecI420, &video_codec) == VCM_OK) {
+Index: build/common.gypi
+===================================================================
+--- build/common.gypi	(revision 4846)
++++ build/common.gypi	(working copy)
+@@ -44,6 +44,7 @@
+       'modules_java_gyp_path%': '<(modules_java_gyp_path)',
+ 
+       'webrtc_vp8_dir%': '<(webrtc_root)/modules/video_coding/codecs/vp8',
++      'webrtc_h264_dir%': '<(webrtc_root)/modules/video_coding/codecs/h264',
+       'rbe_components_path%': '<(webrtc_root)/modules/remote_bitrate_estimator',
+       'include_opus%': 1,
+     },
+@@ -54,6 +55,7 @@
+     'import_isolate_path%': '<(import_isolate_path)',
+     'modules_java_gyp_path%': '<(modules_java_gyp_path)',
+     'webrtc_vp8_dir%': '<(webrtc_vp8_dir)',
++    'webrtc_h264_dir%': '<(webrtc_h264_dir)',
+     'include_opus%': '<(include_opus)',
+     'rbe_components_path%': '<(rbe_components_path)',
+ 
+@@ -127,7 +129,7 @@
+       }],
+       ['build_with_libjingle==1', {
+         'include_tests%': 0,
+-        'enable_tracing%': 0,
++        'enable_tracing%': 1,
+         'enable_android_opensl%': 0,
+       }, {
+         'include_tests%': 1,
+Index: common_types.h
+===================================================================
+--- common_types.h	(revision 4846)
++++ common_types.h	(working copy)
+@@ -514,6 +514,7 @@
+ enum VideoCodecType
+ {
+     kVideoCodecVP8,
++    kVideoCodecH264,
+     kVideoCodecI420,
+     kVideoCodecRED,
+     kVideoCodecULPFEC,
+Index: engine_configurations.h
+===================================================================
+--- engine_configurations.h	(revision 4846)
++++ engine_configurations.h	(working copy)
+@@ -51,6 +51,7 @@
+ 
+ #define VIDEOCODEC_I420
+ #define VIDEOCODEC_VP8
++#define VIDEOCODEC_H264
+ 
+ // ============================================================================
+ //                                 VoiceEngine
+Index: system_wrappers/source/trace_impl.cc
+===================================================================
+--- system_wrappers/source/trace_impl.cc	(revision 4846)
++++ system_wrappers/source/trace_impl.cc	(working copy)
+@@ -29,6 +29,8 @@
+ #pragma warning(disable:4355)
+ #endif  // _WIN32
+ 
++#define WEBRTC_DIRECT_TRACE
++
+ namespace webrtc {
+ 
+ const int Trace::kBoilerplateLength = 71;
+@@ -42,11 +44,13 @@
+   // Sanities to avoid taking lock unless absolutely necessary (for
+   // performance reasons). count_operation == kAddRefNoCreate implies that a
+   // message will be written to file.
++#if 0 // !xkd!
+   if ((level != kTraceAll) && (count_operation == kAddRefNoCreate)) {
+     if (!(level & level_filter())) {
+       return NULL;
+     }
+   }
++#endif
+   TraceImpl* impl =
+     GetStaticInstance<TraceImpl>(count_operation);
+   return impl;
+Index: modules/audio_coding/main/source/audio_coding_module_impl.cc
+===================================================================
+--- modules/audio_coding/main/source/audio_coding_module_impl.cc	(revision 4846)
++++ modules/audio_coding/main/source/audio_coding_module_impl.cc	(working copy)
+@@ -1648,8 +1648,8 @@
+ 
+ // Get current receive frequency.
+ int32_t AudioCodingModuleImpl::ReceiveFrequency() const {
+-  WEBRTC_TRACE(webrtc::kTraceStream, webrtc::kTraceAudioCoding, id_,
+-               "ReceiveFrequency()");
++  //WEBRTC_TRACE(webrtc::kTraceStream, webrtc::kTraceAudioCoding, id_,
++  //             "ReceiveFrequency()");
+   WebRtcACMCodecParams codec_params;
+ 
+   CriticalSectionScoped lock(acm_crit_sect_);
+@@ -1665,8 +1665,8 @@
+ 
+ // Get current playout frequency.
+ int32_t AudioCodingModuleImpl::PlayoutFrequency() const {
+-  WEBRTC_TRACE(webrtc::kTraceStream, webrtc::kTraceAudioCoding, id_,
+-               "PlayoutFrequency()");
++  //WEBRTC_TRACE(webrtc::kTraceStream, webrtc::kTraceAudioCoding, id_,
++  //             "PlayoutFrequency()");
+ 
+   CriticalSectionScoped lock(acm_crit_sect_);
+ 
+Index: modules/video_coding/codecs/interface/video_codec_interface.h
+===================================================================
+--- modules/video_coding/codecs/interface/video_codec_interface.h	(revision 4846)
++++ modules/video_coding/codecs/interface/video_codec_interface.h	(working copy)
+@@ -47,10 +47,17 @@
+   uint8_t simulcast_idx;
+ };
+ 
++struct CodecSpecificInfoH264 {
++  unsigned char nalu_header;
++  bool          single_nalu;
++  uint32_t      original_time_stamp;
++};
++
+ union CodecSpecificInfoUnion
+ {
+     CodecSpecificInfoGeneric   generic;
+     CodecSpecificInfoVP8       VP8;
++    CodecSpecificInfoH264      H264;
+ };
+ 
+ // Note: if any pointers are added to this struct or its sub-structs, it
+Index: modules/video_coding/main/interface/video_coding_defines.h
+===================================================================
+--- modules/video_coding/main/interface/video_coding_defines.h	(revision 4846)
++++ modules/video_coding/main/interface/video_coding_defines.h	(working copy)
+@@ -39,6 +39,7 @@
+ #define VCM_RED_PAYLOAD_TYPE        96
+ #define VCM_ULPFEC_PAYLOAD_TYPE     97
+ #define VCM_VP8_PAYLOAD_TYPE       100
++#define VCM_H264_PAYLOAD_TYPE      101
+ #define VCM_I420_PAYLOAD_TYPE      124
+ 
+ enum VCMVideoProtection {
+Index: modules/video_coding/main/source/video_coding.gypi
+===================================================================
+--- modules/video_coding/main/source/video_coding.gypi	(revision 4846)
++++ modules/video_coding/main/source/video_coding.gypi	(working copy)
+@@ -17,6 +17,7 @@
+         '<(webrtc_root)/modules/video_coding/utility/video_coding_utility.gyp:video_coding_utility',
+         '<(webrtc_root)/system_wrappers/source/system_wrappers.gyp:system_wrappers',
+         '<(webrtc_vp8_dir)/vp8.gyp:webrtc_vp8',
++        '<(webrtc_h264_dir)/h264.gyp:webrtc_h264',
+       ],
+       'include_dirs': [
+         '../interface',
+Index: modules/video_coding/main/source/generic_encoder.h
+===================================================================
+--- modules/video_coding/main/source/generic_encoder.h	(revision 4846)
++++ modules/video_coding/main/source/generic_encoder.h	(working copy)
+@@ -22,6 +22,8 @@
+ class MediaOptimization;
+ }  // namespace media_optimization
+ 
++#define DEBUG_ENCODER_BIT_STREAM
++
+ /*************************************/
+ /* VCMEncodeFrameCallback class     */
+ /***********************************/
+Index: modules/video_coding/main/source/codec_database.cc
+===================================================================
+--- modules/video_coding/main/source/codec_database.cc	(revision 4846)
++++ modules/video_coding/main/source/codec_database.cc	(working copy)
+@@ -19,6 +19,9 @@
+ #ifdef VIDEOCODEC_VP8
+ #include "webrtc/modules/video_coding/codecs/vp8/include/vp8.h"
+ #endif
++#ifdef VIDEOCODEC_H264
++#include "webrtc/modules/video_coding/codecs/h264/include/h264.h"
++#endif
+ #include "webrtc/modules/video_coding/main/source/internal_defines.h"
+ #include "webrtc/system_wrappers/interface/trace.h"
+ 
+@@ -123,6 +126,25 @@
+       return true;
+     }
+ #endif
++#ifdef VIDEOCODEC_H264
++    case VCM_H264_IDX: {
++      strncpy(settings->plName, "H264", 5);
++      settings->codecType    = kVideoCodecH264;
++      // 96 to 127 dynamic payload types for video codecs.
++      settings->plType       = VCM_H264_PAYLOAD_TYPE;
++      // Bitrate needed for this size and framerate.
++      settings->startBitrate = 3 * VCM_DEFAULT_CODEC_WIDTH *
++                                   VCM_DEFAULT_CODEC_HEIGHT * 8 *
++                                   VCM_DEFAULT_FRAME_RATE / 1000 / 2;
++      settings->maxBitrate   = settings->startBitrate;
++      settings->maxFramerate = VCM_DEFAULT_FRAME_RATE;
++      settings->width        = VCM_DEFAULT_CODEC_WIDTH;
++      settings->height       = VCM_DEFAULT_CODEC_HEIGHT;
++      settings->minBitrate   = VCM_MIN_BITRATE;
++      settings->numberOfSimulcastStreams = 0;
++      return true;
++    }
++#endif
+     default: {
+       return false;
+     }
+@@ -349,6 +371,7 @@
+     case kVideoCodecI420:
+     case kVideoCodecRED:
+     case kVideoCodecULPFEC:
++    case kVideoCodecH264: // xkd, ffs
+       break;
+     // Unknown codec type, reset just to be sure.
+     case kVideoCodecUnknown:
+@@ -616,6 +639,10 @@
+     case kVideoCodecI420:
+       return new VCMGenericEncoder(*(new I420Encoder));
+ #endif
++#ifdef VIDEOCODEC_H264
++    case kVideoCodecH264:
++      return new VCMGenericEncoder(*(H264Encoder::Create()));
++#endif
+     default:
+       return NULL;
+   }
+@@ -642,6 +669,10 @@
+     case kVideoCodecI420:
+       return new VCMGenericDecoder(*(new I420Decoder), id_);
+ #endif
++#ifdef VIDEOCODEC_H264
++    case kVideoCodecH264:
++      return new VCMGenericDecoder(*(H264Decoder::Create()));
++#endif
+     default:
+       return NULL;
+   }
+Index: modules/video_coding/main/source/packet.cc
+===================================================================
+--- modules/video_coding/main/source/packet.cc	(revision 4846)
++++ modules/video_coding/main/source/packet.cc	(working copy)
+@@ -111,6 +111,24 @@
+                 codec = kVideoCodecVP8;
+                 break;
+             }
++        case kRtpVideoH264:
++            {
++                if (videoHeader.codecHeader.H264.single_nalu) {
++                  isFirstPacket = true;
++                  markerBit     = true;
++                }
++                insertStartCode = false;
++                if (isFirstPacket && markerBit)
++                    completeNALU = kNaluComplete;
++                else if (isFirstPacket)
++                    completeNALU = kNaluStart;
++                else if (markerBit)
++                    completeNALU = kNaluEnd;
++                else
++                    completeNALU = kNaluIncomplete;
++                codec = kVideoCodecH264;
++                break;
++            }
+         default:
+             {
+                 codec = kVideoCodecUnknown;
+Index: modules/video_coding/main/source/encoded_frame.cc
+===================================================================
+--- modules/video_coding/main/source/encoded_frame.cc	(revision 4846)
++++ modules/video_coding/main/source/encoded_frame.cc	(working copy)
+@@ -136,6 +136,14 @@
+                 }
+                 break;
+             }
++            case kRtpVideoH264:
++            {
++                _codecSpecificInfo.codecSpecific.H264.nalu_header         = header->codecHeader.H264.nalu_header;
++                _codecSpecificInfo.codecSpecific.H264.single_nalu         = header->codecHeader.H264.single_nalu;
++                _codecSpecificInfo.codecSpecific.H264.original_time_stamp = header->codecHeader.H264.original_time_stamp;
++                _codecSpecificInfo.codecType = kVideoCodecH264;
++                break;
++            }
+             default:
+             {
+                 _codecSpecificInfo.codecType = kVideoCodecUnknown;
+Index: modules/video_coding/main/source/jitter_buffer.cc
+===================================================================
+--- modules/video_coding/main/source/jitter_buffer.cc	(revision 4846)
++++ modules/video_coding/main/source/jitter_buffer.cc	(working copy)
+@@ -638,6 +638,7 @@
+   VCMFrameBuffer* frame = NULL;
+   const VCMFrameBufferEnum error = GetFrame(packet, &frame);
+   if (error != kNoError && frame == NULL) {
++    LOG_F(LS_INFO) << "JB::GetFrame fails " << error;
+     return error;
+   }
+ 
+@@ -650,6 +651,7 @@
+     inter_frame_delay_.Reset(now_ms);
+   }
+   if (last_decoded_state_.IsOldPacket(&packet)) {
++	LOG_F(LS_INFO) << "JB::InsertPacket, oldPacket";
+     // This packet belongs to an old, already decoded frame, we want to update
+     // the last decoded sequence number.
+     last_decoded_state_.UpdateOldPacket(&packet);
+@@ -722,6 +724,9 @@
+   bool update_decodable_list = (previous_state != kStateDecodable &&
+       previous_state != kStateComplete);
+   bool continuous = IsContinuous(*frame);
++  WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++               VCMId(vcm_id_, receiver_id_), "JB(%x, master:%d, dem:%d)::InsertPacket, packet seqno:%d type:%d, u: %d, c:%d, f:%d, buffer_return:%d",
++               this, master_, decode_error_mode_, packet.seqNum, packet.frameType, update_decodable_list, continuous, first, buffer_return);
+   switch (buffer_return) {
+     case kGeneralError:
+     case kTimeStampError:
+@@ -885,6 +890,9 @@
+ void VCMJitterBuffer::SetNackMode(VCMNackMode mode,
+                                   int low_rtt_nack_threshold_ms,
+                                   int high_rtt_nack_threshold_ms) {
++  WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++               VCMId(vcm_id_, receiver_id_), "JB(%x, master:%d)::SetNackMode, mode: %d, low :%d, high:%d",
++               this, master_, mode, low_rtt_nack_threshold_ms, high_rtt_nack_threshold_ms);
+   CriticalSectionScoped cs(crit_sect_);
+   nack_mode_ = mode;
+   if (mode == kNoNack) {
+@@ -909,6 +917,9 @@
+ void VCMJitterBuffer::SetNackSettings(size_t max_nack_list_size,
+                                       int max_packet_age_to_nack,
+                                       int max_incomplete_time_ms) {
++  WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++	           VCMId(vcm_id_, receiver_id_), "JB(%x, master:%d)::SetNackSetting, size: %d, age :%d, time:%d",
++	           this, master_, max_nack_list_size, max_packet_age_to_nack, max_incomplete_time_ms);
+   CriticalSectionScoped cs(crit_sect_);
+   assert(max_packet_age_to_nack >= 0);
+   assert(max_incomplete_time_ms_ >= 0);
+@@ -1014,6 +1025,9 @@
+ }
+ 
+ void VCMJitterBuffer::SetDecodeErrorMode(VCMDecodeErrorMode error_mode) {
++  WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++	           VCMId(vcm_id_, receiver_id_), "JB(%x, master:%d)::SetDecodeErrorMode, mode:%d",
++	           this, master_, error_mode);
+   CriticalSectionScoped cs(crit_sect_);
+   decode_error_mode_ = error_mode;
+ }
+@@ -1042,6 +1056,8 @@
+     for (uint16_t i = latest_received_sequence_number_ + 1;
+          IsNewerSequenceNumber(sequence_number, i); ++i) {
+       missing_sequence_numbers_.insert(missing_sequence_numbers_.end(), i);
++      WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++    	           VCMId(vcm_id_, receiver_id_), "JB::AddNACK(%d)", i);
+       TRACE_EVENT_INSTANT1("webrtc", "AddNack", "seqnum", i);
+     }
+     if (TooLargeNackList() && !HandleTooLargeNackList()) {
+@@ -1053,6 +1069,8 @@
+     }
+   } else {
+     missing_sequence_numbers_.erase(sequence_number);
++    WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCoding,
++  	           VCMId(vcm_id_, receiver_id_), "JB::RemoveNACK(%d)", sequence_number);
+     TRACE_EVENT_INSTANT1("webrtc", "RemoveNack", "seqnum", sequence_number);
+   }
+   return true;
+Index: modules/video_coding/main/source/internal_defines.h
+===================================================================
+--- modules/video_coding/main/source/internal_defines.h	(revision 4846)
++++ modules/video_coding/main/source/internal_defines.h	(working copy)
+@@ -44,7 +44,12 @@
+ #else
+   #define VCM_I420_IDX VCM_VP8_IDX
+ #endif
+-#define VCM_NUM_VIDEO_CODECS_AVAILABLE VCM_I420_IDX + 1
++#ifdef VIDEOCODEC_H264
++  #define VCM_H264_IDX VCM_I420_IDX + 1
++#else
++  #define VCM_H264_IDX VCM_I420_IDX
++#endif
++#define VCM_NUM_VIDEO_CODECS_AVAILABLE VCM_H264_IDX + 1
+ 
+ #define VCM_NO_RECEIVER_ID 0
+ 
+Index: modules/video_coding/main/source/video_receiver.cc
+===================================================================
+--- modules/video_coding/main/source/video_receiver.cc	(revision 4846)
++++ modules/video_coding/main/source/video_receiver.cc	(working copy)
+@@ -153,6 +153,11 @@
+ // behavior is desired, use the following API: SetReceiverRobustnessMode.
+ int32_t VideoReceiver::SetVideoProtection(VCMVideoProtection videoProtection,
+                                           bool enable) {
++	  WEBRTC_TRACE(webrtc::kTraceStream,
++	               webrtc::kTraceVideoCoding,
++	               VCMId(_id),
++	               "SetVideoProtection(%x):%d, enable:%d",
++	               this, videoProtection, enable);
+   // By default, do not decode with errors.
+   _receiver.SetDecodeErrorMode(kNoErrors);
+   // The dual decoder should always be error free.
+@@ -412,7 +417,11 @@
+ }
+ 
+ int32_t VideoReceiver::RequestKeyFrame() {
+-  TRACE_EVENT0("webrtc", "RequestKeyFrame");
++  WEBRTC_TRACE(webrtc::kTraceWarning,
++               webrtc::kTraceVideoCoding,
++               VCMId(_id),
++               "VideoReceiver::RequestKeyFrame");
++  //TRACE_EVENT0("webrtc", "RequestKeyFrame");
+   CriticalSectionScoped cs(process_crit_sect_.get());
+   if (_frameTypeCallback != NULL) {
+     const int32_t ret = _frameTypeCallback->RequestKeyFrame();
+@@ -486,6 +495,11 @@
+ 
+ // Must be called from inside the receive side critical section.
+ int32_t VideoReceiver::Decode(const VCMEncodedFrame& frame) {
++	WEBRTC_TRACE(webrtc::kTraceStream,
++	               webrtc::kTraceVideoCoding,
++	               VCMId(_id),
++	               "Decode VIDEO, frame length:%d, ts:%d",
++	               frame.Length(), frame.TimeStamp());
+   TRACE_EVENT_ASYNC_STEP1("webrtc",
+                           "Video",
+                           frame.TimeStamp(),
+@@ -602,6 +616,11 @@
+ int32_t VideoReceiver::IncomingPacket(const uint8_t* incomingPayload,
+                                       uint32_t payloadLength,
+                                       const WebRtcRTPHeader& rtpInfo) {
++  WEBRTC_TRACE(webrtc::kTraceStream,
++               webrtc::kTraceVideoCoding,
++               VCMId(_id),
++               "VR::IncomingPacket length:%d, seqno:%d, ts:%u",
++               payloadLength, rtpInfo.header.sequenceNumber, rtpInfo.header.timestamp);
+   if (rtpInfo.frameType == kVideoFrameKey) {
+     TRACE_EVENT1("webrtc",
+                  "VCM::PacketKeyFrame",
+@@ -617,6 +636,10 @@
+   const VCMPacket packet(incomingPayload, payloadLength, rtpInfo);
+   int32_t ret;
+   if (_dualReceiver.State() != kPassive) {
++	  WEBRTC_TRACE(webrtc::kTraceStream,
++	               webrtc::kTraceVideoCoding,
++	               VCMId(_id),
++	               "Insert into dual receiver");
+     ret = _dualReceiver.InsertPacket(
+         packet, rtpInfo.type.Video.width, rtpInfo.type.Video.height);
+     if (ret == VCM_FLUSH_INDICATOR) {
+@@ -668,6 +691,10 @@
+     nackStatus = _receiver.NackList(nackList, *size, &nack_list_length);
+   }
+   if (nack_list_length == 0 && _dualReceiver.State() != kPassive) {
++	WEBRTC_TRACE(webrtc::kTraceStream,
++			     webrtc::kTraceVideoCoding,
++	             VCMId(_id),
++	             "Get NACKList from dual receiver"); // !xkd!
+     nackStatus = _dualReceiver.NackList(nackList, *size, &nack_list_length);
+   }
+   *size = nack_list_length;
+Index: modules/audio_conference_mixer/source/audio_conference_mixer_impl.cc
+===================================================================
+--- modules/audio_conference_mixer/source/audio_conference_mixer_impl.cc	(revision 4846)
++++ modules/audio_conference_mixer/source/audio_conference_mixer_impl.cc	(working copy)
+@@ -715,9 +715,9 @@
+     ListWrapper& rampOutList,
+     std::map<int, MixerParticipant*>* mixParticipantList,
+     uint32_t& maxAudioFrameCounter) {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "UpdateToMix(mixList,rampOutList,mixParticipantList,%d)",
+-                 maxAudioFrameCounter);
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "UpdateToMix(mixList,rampOutList,mixParticipantList,%d)",
++    //             maxAudioFrameCounter);
+     const uint32_t mixListStartSize = mixList.GetSize();
+     ListWrapper activeList; // Elements are AudioFrames
+     // Struct needed by the passive lists to keep track of which AudioFrame
+@@ -925,8 +925,8 @@
+ void AudioConferenceMixerImpl::GetAdditionalAudio(
+     ListWrapper& additionalFramesList)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "GetAdditionalAudio(additionalFramesList)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "GetAdditionalAudio(additionalFramesList)");
+     ListItem* item = _additionalParticipantList.First();
+     while(item)
+     {
+@@ -968,8 +968,8 @@
+ void AudioConferenceMixerImpl::UpdateMixedStatus(
+     std::map<int, MixerParticipant*>& mixedParticipantsMap)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "UpdateMixedStatus(mixedParticipantsMap)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "UpdateMixedStatus(mixedParticipantsMap)");
+     assert(mixedParticipantsMap.size() <= kMaximumAmountOfMixedParticipants);
+ 
+     // Loop through all participants. If they are in the mix map they
+@@ -997,8 +997,8 @@
+ 
+ void AudioConferenceMixerImpl::ClearAudioFrameList(ListWrapper& audioFrameList)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "ClearAudioFrameList(audioFrameList)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "ClearAudioFrameList(audioFrameList)");
+     ListItem* item = audioFrameList.First();
+     while(item)
+     {
+@@ -1012,8 +1012,8 @@
+ void AudioConferenceMixerImpl::UpdateVADPositiveParticipants(
+     ListWrapper& mixList)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "UpdateVADPositiveParticipants(mixList)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "UpdateVADPositiveParticipants(mixList)");
+ 
+     ListItem* item = mixList.First();
+     while(item != NULL)
+@@ -1094,8 +1094,8 @@
+     AudioFrame& mixedAudio,
+     const ListWrapper& audioFrameList)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "MixFromList(mixedAudio, audioFrameList)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "MixFromList(mixedAudio, audioFrameList)");
+     uint32_t position = 0;
+     ListItem* item = audioFrameList.First();
+     if(item == NULL)
+@@ -1145,8 +1145,8 @@
+     AudioFrame& mixedAudio,
+     const ListWrapper& audioFrameList)
+ {
+-    WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
+-                 "MixAnonomouslyFromList(mixedAudio, audioFrameList)");
++    //WEBRTC_TRACE(kTraceStream, kTraceAudioMixerServer, _id,
++    //             "MixAnonomouslyFromList(mixedAudio, audioFrameList)");
+     ListItem* item = audioFrameList.First();
+     if(item == NULL)
+         return 0;
+Index: modules/rtp_rtcp/source/rtp_sender_video.cc
+===================================================================
+--- modules/rtp_rtcp/source/rtp_sender_video.cc	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_sender_video.cc	(working copy)
+@@ -17,6 +17,7 @@
+ #include "webrtc/modules/rtp_rtcp/source/producer_fec.h"
+ #include "webrtc/modules/rtp_rtcp/source/rtp_format_video_generic.h"
+ #include "webrtc/modules/rtp_rtcp/source/rtp_format_vp8.h"
++#include "webrtc/modules/rtp_rtcp/source/rtp_format_h264.h"
+ #include "webrtc/modules/rtp_rtcp/source/rtp_utility.h"
+ #include "webrtc/system_wrappers/interface/critical_section_wrapper.h"
+ #include "webrtc/system_wrappers/interface/trace.h"
+@@ -92,6 +93,8 @@
+   RtpVideoCodecTypes videoType = kRtpVideoGeneric;
+   if (ModuleRTPUtility::StringCompare(payloadName, "VP8",3)) {
+     videoType = kRtpVideoVp8;
++  } else if (ModuleRTPUtility::StringCompare(payloadName, "H264", 4))  {
++    videoType = kRtpVideoH264;
+   } else if (ModuleRTPUtility::StringCompare(payloadName, "I420", 4)) {
+     videoType = kRtpVideoGeneric;
+   } else {
+@@ -316,6 +319,16 @@
+                          fragmentation,
+                          rtpTypeHdr);
+         break;
++    case kRtpVideoH264:
++        retVal = SendH264(frameType,
++                payloadType,
++                captureTimeStamp,
++                capture_time_ms,
++                payloadData,
++                payloadSize,
++                fragmentation,
++                rtpTypeHdr);
++        break;
+     default:
+         assert(false);
+         break;
+@@ -481,6 +494,61 @@
+     return 0;
+ }
+ 
++int32_t
++RTPSenderVideo::SendH264(const FrameType frameType,
++                        const int8_t payloadType,
++                        const uint32_t captureTimeStamp,
++                        int64_t capture_time_ms,
++                        const uint8_t* payloadData,
++                        const uint32_t payloadSize,
++                        const RTPFragmentationHeader* fragmentation,
++                        const RTPVideoTypeHeader* rtpTypeHdr) {
++
++    const uint16_t rtpHeaderLength = _rtpSender.RTPHeaderLength();
++
++    int32_t payloadBytesToSend = payloadSize;
++    const uint8_t* data = payloadData;
++
++    uint16_t maxPayloadLengthH264 = _rtpSender.MaxDataPayloadLength();
++
++    RtpFormatH264 packetizer(data, payloadBytesToSend, maxPayloadLengthH264);
++
++    StorageType storage = kAllowRetransmission;
++    bool protect = (frameType == kVideoFrameKey);
++    bool last = false;
++
++    while (!last)
++    {
++        // Write H264 Payload
++        uint8_t dataBuffer[IP_PACKET_SIZE] = {0};
++        int payloadBytesInPacket = 0;
++        int ret_val = packetizer.NextPacket(&dataBuffer[rtpHeaderLength],
++                                            &payloadBytesInPacket, &last);
++        if (ret_val < 0)
++        {
++            return -1;
++        }
++
++        // Write RTP header.
++        // Set marker bit true if this is the last packet in frame.
++        _rtpSender.BuildRTPheader(dataBuffer, payloadType, last,
++                                  captureTimeStamp, capture_time_ms);
++        if (-1 == SendVideoPacket(dataBuffer, payloadBytesInPacket,
++                                  rtpHeaderLength, captureTimeStamp,
++                                  capture_time_ms, storage, protect))
++        {
++          WEBRTC_TRACE(kTraceError, kTraceRtpRtcp, _id,
++                       "RTPSenderVideo::SendH264 failed to send packet number"
++                       " %d", _rtpSender.SequenceNumber());
++        }
++        if (ret_val == 0) {
++          // single NAL unit
++          last = true;
++        }
++    }
++    return 0;
++}
++
+ void RTPSenderVideo::ProcessBitrate() {
+   _videoBitrate.Process();
+   _fecOverheadRate.Process();
+Index: modules/rtp_rtcp/source/rtp_sender_video.h
+===================================================================
+--- modules/rtp_rtcp/source/rtp_sender_video.h	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_sender_video.h	(working copy)
+@@ -111,6 +111,14 @@
+                     const RTPFragmentationHeader* fragmentation,
+                     const RTPVideoTypeHeader* rtpTypeHdr);
+ 
++    int32_t SendH264(const FrameType frameType,
++                    const int8_t payloadType,
++                    const uint32_t captureTimeStamp,
++                    int64_t capture_time_ms,
++                    const uint8_t* payloadData,
++                    const uint32_t payloadSize,
++                    const RTPFragmentationHeader* fragmentation,
++                    const RTPVideoTypeHeader* rtpTypeHdr);
+ private:
+     int32_t             _id;
+     RTPSenderInterface&        _rtpSender;
+Index: modules/rtp_rtcp/source/rtp_payload_registry.cc
+===================================================================
+--- modules/rtp_rtcp/source/rtp_payload_registry.cc	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_payload_registry.cc	(working copy)
+@@ -448,6 +448,8 @@
+     RtpVideoCodecTypes videoType = kRtpVideoGeneric;
+     if (ModuleRTPUtility::StringCompare(payloadName, "VP8", 3)) {
+       videoType = kRtpVideoVp8;
++    } else if (ModuleRTPUtility::StringCompare(payloadName, "H264", 4)) {
++      videoType = kRtpVideoH264;
+     } else if (ModuleRTPUtility::StringCompare(payloadName, "I420", 4)) {
+       videoType = kRtpVideoGeneric;
+     } else if (ModuleRTPUtility::StringCompare(payloadName, "ULPFEC", 6)) {
+Index: modules/rtp_rtcp/source/rtp_receiver_video.cc
+===================================================================
+--- modules/rtp_rtcp/source/rtp_receiver_video.cc	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_receiver_video.cc	(working copy)
+@@ -19,6 +19,7 @@
+ #include "webrtc/system_wrappers/interface/critical_section_wrapper.h"
+ #include "webrtc/system_wrappers/interface/trace.h"
+ #include "webrtc/system_wrappers/interface/trace_event.h"
++#include "webrtc/modules/rtp_rtcp/source/rtp_format_h264.h"
+ 
+ namespace webrtc {
+ 
+@@ -124,6 +125,8 @@
+       return ReceiveGenericCodec(rtp_header, payload_data, payload_data_length);
+     case kRtpVideoVp8:
+       return ReceiveVp8Codec(rtp_header, payload_data, payload_data_length);
++    case kRtpVideoH264:
++      return ReceiveH264Codec(rtp_header, payload_data, payload_data_length);
+     case kRtpVideoNone:
+       break;
+   }
+@@ -220,6 +223,77 @@
+   return 0;
+ }
+ 
++int32_t RTPReceiverVideo::ReceiveH264Codec(WebRtcRTPHeader* rtp_header,
++                                          const uint8_t* payload_data,
++                                          uint16_t payload_data_length) {
++  // real payload
++  uint8_t* payload;
++  uint16_t payload_length;
++  unsigned char nal_type = payload_data[0] & 0x1F;
++  if (nal_type == RtpFormatH264::kH264FUANALUType) {
++    // Fragmentation
++    unsigned char fnri = payload_data[0] & 0xE0;
++    unsigned char original_nal_type = payload_data[1] & 0x1F;
++    bool first_fragment = (payload_data[1] & 0x80) >> 7;
++    //bool last_fragment = (payload_data[1] & 0x40) >> 6;
++
++    payload     = const_cast<uint8_t*> (payload_data)  + RtpFormatH264::kH264FUAHeaderLengthInBytes;
++    unsigned char original_nal_header = fnri | original_nal_type;
++    payload_length = payload_data_length - RtpFormatH264::kH264FUAHeaderLengthInBytes;
++
++    // WebRtcRTPHeader
++    if (original_nal_type == RtpFormatH264::kH264NALU_IDR) {
++      rtp_header->frameType = kVideoFrameKey;
++    } else {
++      rtp_header->frameType = kVideoFrameDelta;
++    }
++    rtp_header->type.Video.codec    = kRtpVideoH264;
++    rtp_header->type.Video.isFirstPacket = first_fragment;
++    RTPVideoHeaderH264* h264_header = &rtp_header->type.Video.codecHeader.H264;
++    h264_header->nalu_header        = original_nal_header;
++    h264_header->single_nalu        = false;
++    WEBRTC_TRACE(kTraceStream,
++                 kTraceRtpRtcp,
++                 id_,
++                 "RTPReceiverVideo::ReceivedH264Codec(ts:%u, sq:%d, FA, nal_type:%d, first:%d)",
++                  rtp_header->header.timestamp, rtp_header->header.sequenceNumber, original_nal_type, first_fragment);
++  } else {
++    // single NALU
++    payload = const_cast<uint8_t*> (payload_data);
++    payload_length = payload_data_length;
++
++    // WebRtcRTPHeader
++    if (nal_type == RtpFormatH264::kH264NALU_SPS) {
++      // On sender side, SPS/PPS/IDR share the same time_stamp,
++      // so jitter_buffer will think they are in the same frame.
++      rtp_header->frameType = kVideoFrameKey;
++      rtp_header->header.timestamp -= 100; // hack
++    } else if (nal_type == RtpFormatH264::kH264NALU_PPS) {
++      rtp_header->frameType = kVideoFrameKey;
++      rtp_header->header.timestamp -= 50; // hack
++    } else {
++      rtp_header->frameType = kVideoFrameDelta;
++    }
++    rtp_header->type.Video.codec    = kRtpVideoH264;
++    rtp_header->type.Video.isFirstPacket = true; // First packet
++    RTPVideoHeaderH264* h264_header = &rtp_header->type.Video.codecHeader.H264;
++    h264_header->nalu_header        = payload_data[0];
++    h264_header->single_nalu        = true;
++    WEBRTC_TRACE(kTraceStream,
++                 kTraceRtpRtcp,
++                 id_,
++                 "RTPReceiverVideo::ReceivedH264Codec(ts:%u, sq:%d, nal_type:%d)",
++                  rtp_header->header.timestamp, rtp_header->header.sequenceNumber, nal_type);
++  }
++
++  if (data_callback_->OnReceivedPayloadData(payload,
++                                            payload_length,
++                                            rtp_header) != 0) {
++    return -1;
++  }
++  return 0;
++}
++
+ int32_t RTPReceiverVideo::ReceiveGenericCodec(
+     WebRtcRTPHeader* rtp_header,
+     const uint8_t* payload_data,
+Index: modules/rtp_rtcp/source/rtp_rtcp.gypi
+===================================================================
+--- modules/rtp_rtcp/source/rtp_rtcp.gypi	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_rtcp.gypi	(working copy)
+@@ -93,6 +93,8 @@
+         'video_codec_information.h',
+         'rtp_format_vp8.cc',
+         'rtp_format_vp8.h',
++        'rtp_format_h264.cc',
++        'rtp_format_h264.h',
+         'rtp_format_video_generic.h',
+         'vp8_partition_aggregator.cc',
+         'vp8_partition_aggregator.h',
+Index: modules/rtp_rtcp/source/rtp_receiver_video.h
+===================================================================
+--- modules/rtp_rtcp/source/rtp_receiver_video.h	(revision 4846)
++++ modules/rtp_rtcp/source/rtp_receiver_video.h	(working copy)
+@@ -69,6 +69,10 @@
+                           const uint8_t* payload_data,
+                           uint16_t payload_data_length);
+ 
++  int32_t ReceiveH264Codec(WebRtcRTPHeader* rtp_header,
++                          const uint8_t* payload_data,
++                          uint16_t payload_data_length);
++
+   int32_t BuildRTPheader(const WebRtcRTPHeader* rtp_header,
+                          uint8_t* data_buffer) const;
+ 
+Index: modules/interface/module_common_types.h
+===================================================================
+--- modules/interface/module_common_types.h	(revision 4846)
++++ modules/interface/module_common_types.h	(working copy)
+@@ -89,15 +89,26 @@
+     bool           beginningOfPartition;  // True if this packet is the first
+                                           // in a VP8 partition. Otherwise false
+ };
++
++// This is NOT carried in RTP
++struct RTPVideoHeaderH264
++{
++    unsigned char nalu_header;
++    bool          single_nalu;
++    uint32_t      original_time_stamp; // only set for SPS/PPS
++};
++
+ union RTPVideoTypeHeader
+ {
+     RTPVideoHeaderVP8       VP8;
++    RTPVideoHeaderH264      H264;
+ };
+ 
+ enum RtpVideoCodecTypes
+ {
+     kRtpVideoNone,
+     kRtpVideoGeneric,
++    kRtpVideoH264,
+     kRtpVideoVp8
+ };
+ struct RTPVideoHeader

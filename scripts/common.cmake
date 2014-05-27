@@ -1,0 +1,12 @@
+if (WIN32)
+    include(scripts/win32.cmake)
+elseif(MAC)
+    include(scripts/mac.cmake)
+elseif(IOS)
+    include(scripts/ios.cmake)
+elseif(UNIX)
+    include(scripts/unix.cmake)
+elseif(ANDROID)
+    include(scripts/android.cmake)
+endif()
+

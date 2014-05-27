@@ -1,0 +1,215 @@
+Index: DEPS
+===================================================================
+--- DEPS	(revision 5301)
++++ DEPS	(working copy)
+@@ -218,16 +218,6 @@
+                "--win-only"],
+   },
+   {
+-    # Download test resources, i.e. video and audio files from Google Storage.
+-    "pattern": "\\.sha1",
+-    "action": ["download_from_google_storage",
+-               "--directory",
+-               "--recursive",
+-               "--num_threads=10",
+-               "--bucket", "chromium-webrtc-resources",
+-               Var("root_dir") + "/resources"],
+-  },
+-  {
+     # A change to a .gyp, .gypi, or to GYP itself should run the generator.
+     "pattern": ".",
+     "action": ["python", Var("root_dir") + "/build/gyp_chromium",
+Index: talk/app/webrtc/videosource.cc
+===================================================================
+--- talk/app/webrtc/videosource.cc	(revision 5301)
++++ talk/app/webrtc/videosource.cc	(working copy)
+@@ -73,7 +73,8 @@
+ // Default resolution. If no constraint is specified, this is the resolution we
+ // will use.
+ static const cricket::VideoFormatPod kDefaultFormat =
+-    {640, 480, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY};
++    {160, 120, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY};
++    //{640, 480, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY};
+ 
+ // List of formats used if the camera doesn't support capability enumeration.
+ static const cricket::VideoFormatPod kVideoFormats[] = {
+@@ -83,7 +84,22 @@
+   {640, 360, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY},
+   {640, 480, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY},
+   {320, 240, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY},
+-  {320, 180, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY}
++  {320, 180, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY},
++  {160, 120, FPS_TO_INTERVAL(30), cricket::FOURCC_ANY},
++  {1280, 720, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {960, 720, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {640, 360, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {640, 480, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {320, 240, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {320, 180, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {160, 120, FPS_TO_INTERVAL(24), cricket::FOURCC_ANY},
++  {1280, 720, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {960, 720, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {640, 360, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {640, 480, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {320, 240, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {320, 180, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY},
++  {160, 120, FPS_TO_INTERVAL(15), cricket::FOURCC_ANY}
+ };
+ 
+ MediaSourceInterface::SourceState
+Index: talk/media/webrtc/webrtcvideocapturer.cc
+===================================================================
+--- talk/media/webrtc/webrtcvideocapturer.cc	(revision 5301)
++++ talk/media/webrtc/webrtcvideocapturer.cc	(working copy)
+@@ -191,7 +191,7 @@
+   factory_->DestroyDeviceInfo(info);
+   if (supported.empty()) {
+     LOG(LS_ERROR) << "Failed to find usable formats for id: " << device.id;
+-    return false;
++    //return false;
+   }
+ 
+   module_ = factory_->Create(0, vcm_id);
+Index: webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit.mm
+===================================================================
+--- webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit.mm	(revision 5301)
++++ webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit.mm	(working copy)
+@@ -15,6 +15,20 @@
+ #include "webrtc/system_wrappers/interface/critical_section_wrapper.h"
+ #include "webrtc/system_wrappers/interface/trace.h"
+ 
++class nsAutoreleasePool {
++public:
++    nsAutoreleasePool()
++    {
++        mLocalPool = [[NSAutoreleasePool alloc] init];
++    }
++    ~nsAutoreleasePool()
++    {
++        [mLocalPool release];
++    }
++private:
++    NSAutoreleasePool *mLocalPool;
++};
++
+ namespace webrtc
+ {
+ 
+@@ -40,7 +54,7 @@
+ 
+ VideoCaptureMacQTKit::~VideoCaptureMacQTKit()
+ {
+-
++    nsAutoreleasePool localPool;
+     WEBRTC_TRACE(webrtc::kTraceDebug, webrtc::kTraceVideoCapture, _id,
+                  "~VideoCaptureMacQTKit() called");
+     if(_captureDevice)
+@@ -71,6 +85,8 @@
+     _deviceUniqueId = new char[nameLength+1];
+     memcpy(_deviceUniqueId, iDeviceUniqueIdUTF8,nameLength+1);
+ 
++    nsAutoreleasePool localPool;
++
+     _captureDevice = [[VideoCaptureMacQTKitObjC alloc] init];
+     if(NULL == _captureDevice)
+     {
+@@ -163,7 +179,7 @@
+ int32_t VideoCaptureMacQTKit::StartCapture(
+     const VideoCaptureCapability& capability)
+ {
+-
++    nsAutoreleasePool localPool;
+     _captureWidth = capability.width;
+     _captureHeight = capability.height;
+     _captureFrameRate = capability.maxFPS;
+@@ -180,6 +196,7 @@
+ 
+ int32_t VideoCaptureMacQTKit::StopCapture()
+ {
++    nsAutoreleasePool localPool;
+     [_captureDevice stopCapture];
+     _isCapturing = false;
+     return 0;
+Index: webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info.mm
+===================================================================
+--- webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info.mm	(revision 5301)
++++ webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info.mm	(working copy)
+@@ -13,6 +13,20 @@
+ #include "webrtc/modules/video_capture/video_capture_config.h"
+ #include "webrtc/system_wrappers/interface/trace.h"
+ 
++class nsAutoreleasePool {
++public:
++    nsAutoreleasePool()
++    {
++        mLocalPool = [[NSAutoreleasePool alloc] init];
++    }
++    ~nsAutoreleasePool()
++    {
++        [mLocalPool release];
++    }
++private:
++    NSAutoreleasePool *mLocalPool;
++};
++
+ namespace webrtc
+ {
+ namespace videocapturemodule
+@@ -21,11 +35,13 @@
+ VideoCaptureMacQTKitInfo::VideoCaptureMacQTKitInfo(const int32_t id) :
+     DeviceInfoImpl(id)
+ {
++    nsAutoreleasePool localPool;
+     _captureInfo = [[VideoCaptureMacQTKitInfoObjC alloc] init];
+ }
+ 
+ VideoCaptureMacQTKitInfo::~VideoCaptureMacQTKitInfo()
+ {
++    nsAutoreleasePool localPool;
+     [_captureInfo release];
+ 
+ }
+@@ -38,7 +54,7 @@
+ 
+ uint32_t VideoCaptureMacQTKitInfo::NumberOfDevices()
+ {
+-
++    nsAutoreleasePool localPool;
+     uint32_t captureDeviceCount =
+         [[_captureInfo getCaptureDeviceCount]intValue];
+     return captureDeviceCount;
+@@ -103,7 +119,7 @@
+     const char* dialogTitleUTF8, void* parentWindow,
+     uint32_t positionX, uint32_t positionY)
+ {
+-
++    nsAutoreleasePool localPool;
+     return [[_captureInfo
+              displayCaptureSettingsDialogBoxWithDevice:deviceUniqueIdUTF8
+              AndTitle:dialogTitleUTF8
+Index: webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.h
+===================================================================
+--- webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.h	(revision 5301)
++++ webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.h	(working copy)
+@@ -25,7 +25,7 @@
+ @interface VideoCaptureMacQTKitInfoObjC : NSObject{
+     bool                                _OSSupportedInfo;
+     NSArray*                            _captureDevicesInfo;
+-    NSAutoreleasePool*                    _poolInfo;
++    //NSAutoreleasePool*                    _poolInfo;
+     int                                    _captureDeviceCountInfo;
+ 
+ }
+Index: webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.mm
+===================================================================
+--- webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.mm	(revision 5301)
++++ webrtc/modules/video_capture/mac/qtkit/video_capture_qtkit_info_objc.mm	(working copy)
+@@ -137,7 +137,7 @@
+         return [NSNumber numberWithInt:0];
+     }
+ 
+-    _poolInfo = [[NSAutoreleasePool alloc]init];
++    //_poolInfo = [[NSAutoreleasePool alloc]init];
+     _captureDeviceCountInfo = 0;
+     [self getCaptureDevices];
+ 
