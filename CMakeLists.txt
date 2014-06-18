@@ -23,5 +23,8 @@ include(scripts/common.cmake)
 
 add_subdirectory(ubase)
 add_subdirectory(src)
+
+if (NOT ${IOS})
 add_subdirectory(tests)
+endif()
 

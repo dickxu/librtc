@@ -6,8 +6,8 @@
 ROOT=`pwd`/..
 HOST=`uname`
 WEBRTC_URL=http://webrtc.googlecode.com/svn/trunk
-WEBRTC_REV=5301
-OUT=out
+WEBRTC_REV=6407
+OUT=
 
 echox() { 
     [ $# -gt 1 ] && b="\033[${1}m" && e="\033[00m" && shift
@@ -92,7 +92,7 @@ config_webrtc() {
     # ./third_party/webrtc/trunk/talk/app/webrtc/objc/README
     if [ $TARGET = "IOS" ] || [ $TARGET = "IOS-SIM" ] || [ $TARGET = "MAC" ]; then
         echo "target_os = ['ios', 'mac']" >> .gclient
-        #gclient sync -r $WEBRTC_REV >/tmp/svn_webrtc.log 2>&1
+        gclient sync -r $WEBRTC_REV >/tmp/svn_webrtc.log 2>&1
         gclient runhooks >/tmp/svn_webrtc.log 2>&1
         check_err "fail to get webrtc with hook from svn!"
     elif [ $TARGET = "ANDROID" ]; then
@@ -172,7 +172,7 @@ pack_webrtc() {
     [ ! -e $local_root ] && echor "fail to pack webrtc" && return
 
     cd $local_root
-    target=webrtc_$BUILD_TYPE
+    target=webrtc_all
     rm -f lib$target.a
     excludes="testing\|unittest\|test\|Test\|protobuf_full_do_not_use"
     thelibs=`find . -depth 1 -name "lib*.a" -print | grep -v "$excludes"`
@@ -182,16 +182,20 @@ pack_webrtc() {
         ldflags="-framework CoreServices -framework CoreAudio -framework CoreVideo -framework QTKit -framework OpenGL -framework AudioToolbox -framework ApplicationServices -framework Foundation -framework AppKit -framework Security -framework IOKit -framework SystemConfiguration -lcrypto -lssl -lc -lstdc++"
         make_so $target
         check_err "fail to gen shared .so"
+        mkdir -p $ROOT/lib/$OUT && cp lib$target.so $ROOT/lib/$OUT
     fi
 
     # for static lib
     make_archive $target 2>/dev/null
     check_err "fail to gen archive .a"
+    mkdir -p $ROOT/lib/$OUT && cp lib$target.a $ROOT/lib/$OUT
 }
 
 test_webrtc() {
+    return
     obj_path=$ROOT/third_party
     echog "[+] To test webrtc of $TARGET ..."
+    pushd $obj_path
     if [ $TARGET = "IOS-SIM" ]; then
         if [ ! -e $obj_path/iphonesim ]; then
             git clone https://github.com/hborders/iphonesim.git
@@ -203,10 +207,12 @@ test_webrtc() {
         popd
 
         echog "[-] lanuching AppRTCDemo.app ..."
-        if [ -f $obj_path/iphonesim/build/Release/iphonesim ]; then
-            $obj_path/iphonesim/build/Release/iphonesim launch $obj_path/webrtc/trunk/$OUT/AppRTCDemo.app &
+        iphonesim=$obj_path/iphonesim/build/Release/iphonesim
+        if [ -f $iphonesim ]; then
+            $iphonesim launch $obj_path/webrtc/trunk/$OUT/AppRTCDemo.app &
         fi
     fi
+    popd
 }
 
 clean_xrtc() {
@@ -229,16 +235,19 @@ build_xrtc() {
         xcodebuild -target ubase_static -target rtc_static -target testrtc -configuration $BUILD_TYPE
     elif [ $TARGET = "IOS" ]; then
         cmake -D TARGET=$TARGET -D IOS=1 -D CMAKE_BUILD_TYPE=$BUILD_TYPE -G Xcode ..
-        xcodebuild -target ubase_static -target rtc_static -target testrtc -configuration $BUILD_TYPE
+        xcodebuild -target ubase_static -target rtc_static -configuration $BUILD_TYPE
     elif [ $TARGET = "IOS-SIM" ]; then
         cmake -D TARGET=$TARGET -D IOS=1 -D CMAKE_BUILD_TYPE=$BUILD_TYPE -G Xcode ..
-        xcodebuild -target ubase_static -target rtc_static -target testrtc -configuration $BUILD_TYPE
+        xcodebuild -target ubase_static -target rtc_static -configuration $BUILD_TYPE
     elif [ $TARGET = "UNIX" ]; then
         cmake -D CMAKE_BUILD_TYPE=$BUILD_TYPE UNIX=1 ..
         make
     fi
     popd
     popd
+
+    mkdir -p $ROOT/lib/$OUT
+    [ -d $ROOT/bld/lib/$BUILD_TYPE ] && cp -f $ROOT/bld/lib/$BUILD_TYPE/lib*.a $ROOT/lib/$OUT 2>/dev/null
 }
 
 usage() {

@@ -5,28 +5,22 @@ add_definitions(
     -DWEBRTC_IOS
 )
 
+#set(CMAKE_XCODE_ATTRIBUTE_GCC_VERSION "com.apple.compilers.llvm.clang.1_0")
+#set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++")
+set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libstdc++")
+#set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -stdlib=libstdc++")
 
 if (${TARGET} STREQUAL "IOS")
     set (IOS_PLATFORM "iPhoneOS.platform")
     set (CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
-    set (CMAKE_OSX_ARCHITECTURES "armv6 armv7")
+    set (CMAKE_OSX_ARCHITECTURES "armv7")
 else ()
     set (IOS_PLATFORM "iPhoneSimulator.platform")
     set (CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphonesimulator")
     set (CMAKE_OSX_ARCHITECTURES "i386")
 endif ()
 
-set(XCODE_ROOT1 "/Applications/Xcode2.app/Contents/Developer/Platforms/${IOS_PLATFORM}/Developer")
-set(XCODE_ROOT2 "/Applications/Xcode 2.app/Contents/Developer/Platforms/${IOS_PLATFORM}/Developer")
-set(XCODE_ROOT3 "/Applications/Xcode.app/Contents/Developer/Platforms/${IOS_PLATFORM}/Developer")
-if (EXISTS ${XCODE_ROOT1})
-    set(XCODE_ROOT ${XCODE_ROOT1})
-elseif (EXISTS ${XCODE_ROOT2})
-    set(XCODE_ROOT ${XCODE_ROOT2})
-elseif (EXISTS ${XCODE_ROOT3})
-    set(XCODE_ROOT ${XCODE_ROOT3})
-endif()
-
+set(XCODE_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/${IOS_PLATFORM}/Developer")
 file (GLOB _XCODE_SDKS "${XCODE_ROOT}/SDKs/*")
 if (_XCODE_SDKS) 
     list (SORT _XCODE_SDKS)
@@ -52,9 +46,9 @@ find_library(FWSECURITY Security)
 find_library(FWIOKIT IOKit)
 
 if (${TARGET} STREQUAL "IOS")
-find_library(LIBWEBRTC libwebrtc_${CMAKE_BUILD_TYPE}.a third_party/webrtc/trunk/out_ios/${CMAKE_BUILD_TYPE}-iphoneos)
+find_library(LIBWEBRTC libwebrtc_all.a third_party/webrtc/trunk/out_ios/${CMAKE_BUILD_TYPE}-iphoneos)
 else ()
-find_library(LIBWEBRTC libwebrtc_${CMAKE_BUILD_TYPE}.a third_party/webrtc/trunk/out_sim/${CMAKE_BUILD_TYPE})
+find_library(LIBWEBRTC libwebrtc_all.a third_party/webrtc/trunk/out_sim/${CMAKE_BUILD_TYPE})
 endif ()
 
 set(all_libs
