@@ -46,9 +46,9 @@ find_library(FWSECURITY Security)
 find_library(FWIOKIT IOKit)
 
 if (${TARGET} STREQUAL "IOS")
-find_library(LIBWEBRTC libwebrtc_all.a third_party/webrtc/trunk/out_ios/${CMAKE_BUILD_TYPE}-iphoneos)
+find_library(LIBWEBRTC libwebrtc_all.a lib/out_ios/${CMAKE_BUILD_TYPE}-iphoneos)
 else ()
-find_library(LIBWEBRTC libwebrtc_all.a third_party/webrtc/trunk/out_sim/${CMAKE_BUILD_TYPE})
+find_library(LIBWEBRTC libwebrtc_all.a lib/out_sim/${CMAKE_BUILD_TYPE})
 endif ()
 
 set(all_libs

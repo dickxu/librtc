@@ -3,7 +3,7 @@
 ROOT=`pwd`/..
 
 usage() {
-    echo "usage: $0 ios|ios-sim|mac [webrtc|xrtc|clean]"
+    echo "usage: $0 ios|ios-sim|mac|android|unix [webrtc|xrtc|clean]"
 }
 
 main() {
@@ -17,6 +17,10 @@ main() {
         wrsim
     elif [ $1 = "mac" ]; then
         wrmac
+    elif [ $1 = "android" ]; then
+        wrandroid
+    elif [ $1 = "unix" ]; then
+        wrunix
     else
         usage && exit 1
     fi

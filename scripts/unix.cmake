@@ -14,7 +14,7 @@ else (GTK2_FOUND)
     message(FATAL_ERROR "GTK2 is required to build this project.")
 endif (GTK2_FOUND)
 
-find_library(LIBWEBRTC libwebrtc_${CMAKE_BUILD_TYPE}.a third_party/webrtc/trunk/out_unix/${CMAKE_BUILD_TYPE})
+find_library(LIBWEBRTC libwebrtc_all.a lib/out_unix/${CMAKE_BUILD_TYPE})
 
 #${GTK2_LIBRARIES}
 set(all_libs
