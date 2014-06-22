@@ -3,6 +3,8 @@ add_definitions(
     -DPOSIX
     -DIOS
     -DWEBRTC_IOS
+    -DOBJC
+    -x objective-c++
 )
 
 #set(CMAKE_XCODE_ATTRIBUTE_GCC_VERSION "com.apple.compilers.llvm.clang.1_0")

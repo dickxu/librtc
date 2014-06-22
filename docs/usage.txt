@@ -3,14 +3,22 @@
 
 1). only support building in Mac OSX
 
-2). default by Release mode; if Debug
-    $>export BUILD_TYPE=Debug
+2). default by Release mode; if Debug set:
+    $> export BUILD_TYPE=Debug
 
 3). For ios platform
-    $>source scripts/env_ninja.sh
-    $>wrios && sh run_cfg.sh webrtc
-    $>wrios && sh run_cfg.sh xrtc
+    #a. Building google webrtc
+    $> sh build.sh ios webrtc
 
+    #b. Building xrtc lib
+    $> sh build.sh ios xrtc
+    
+    #c. Output library flags:
+    header:  librtc/inc/xrtc_api.h
+    libs:    librtc/lib/out_ios/Release-iphoneos/{libubase.a,librtc.a,libwebrtc_all.a}
+
+4). Depended libs
+    sqlite3, openssl,
 
 
 2. How to call api from xrtc_api.h

@@ -27,6 +27,10 @@
 
 #include <string>
 
+#if defined(OBJC)
+#import <Foundation/Foundation.h>
+#endif
+
 enum action_t {
     ADD_ACTION,
     REMOVE_ACTION,
@@ -56,6 +60,47 @@ typedef struct _video_frame {
     int size;           // size of data buffer
     unsigned char *data;
 }video_frame_t;
+
+
+#if defined(OBJC) // For OBJC intefaces
+//>
+// The interface of video render:
+//  OnSize called when resolution changes.
+//  OnFrame called when having decoded data.
+@interface IRtcRender : NSObject {
+}
+
+- (void) OnSize:(int)width height:(int)value;
+- (void) OnFrame:(const video_frame_t *)frame;
+
+@end
+
+
+//>
+// For receving notification from IRtcCenter
+@interface IRtcSink : NSObject {
+}
+
+// Return media sdp of local a/v, which should be sent to remote peer
+- (void) OnSessionDescription:(const std::string &)type sdp:(const std::string &)str;
+
+// Return ice candidate of current peer connection, which should be sent to remote peer
+- (void) OnIceCandidate:(const std::string &)candidate sdpMid:(const std::string &)mid sdpMLineIndex:(int)index;
+
+// Notify the status of remote stream(ADD or REMOVE)
+// @param action: refer to action_t
+- (void) OnRemoteStream:(int)action;
+
+// This callback will be activated when IRtcCenter::GetUserMedia()
+// @param error: 0 if OK, else fail
+// @param errstr: error message
+- (void) OnGetUserMedia:(int)error errstr:(std::string)str;
+
+- (void) OnFailureMesssage:(std::string)str;
+
+@end
+
+#else
 
 //>
 // The interface of video render:
@@ -92,6 +137,9 @@ public:
 
     virtual void OnFailureMesssage(std::string errstr) = 0;
 };
+
+#endif // OBJC
+
 
 //>
 // Webrtc Control Center

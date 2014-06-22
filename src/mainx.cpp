@@ -3,7 +3,6 @@
 #include "webrtc.h"
 #include "error.h"
 
-
 class WebrtcRender : public webrtc::VideoRendererInterface {
 private:
     IRtcRender *m_render;
@@ -37,8 +36,11 @@ virtual void SetSize(int width, int height) {
         m_frame.data = new unsigned char[m_frame.size];
         m_frame.color = ARGB32Fmt;
     }
-
+#if defined(OBJC)
+    [m_render OnSize:width height:height];
+#else
     m_render->OnSize(width, height);
+#endif
 }
 
 // For webrtc::VideoRendererInterface
@@ -57,7 +59,11 @@ virtual void RenderFrame(const cricket::VideoFrame* frame) {
     m_frame.timestamp = frame->GetTimeStamp();
     m_frame.rotation = frame->GetRotation();
     m_frame.length = m_frame.size;
+#if defined(OBJC)
+    [m_render OnFrame:&m_frame];
+#else
     m_render->OnFrame(&m_frame);
+#endif
 }
 
 };
@@ -254,11 +260,19 @@ virtual void Close() {
 virtual void SuccessCallback(xrtc::MediaStreamPtr stream)         {
     return_assert(m_sink);
     m_local_stream = stream;
+#if defined(OBJC)
+    [m_sink OnGetUserMedia:UBASE_S_OK errstr:""];
+#else
     m_sink->OnGetUserMedia(UBASE_S_OK, "");
+#endif
 }
 virtual void ErrorCallback(xrtc::NavigatorUserMediaError &error)  {
     return_assert(m_sink);
+#if defined(OBJC)
+    [m_sink OnGetUserMedia:UBASE_E_FAIL errstr:"fail to get local media"];
+#else
     m_sink->OnGetUserMedia(UBASE_E_FAIL, "fail to get local media");
+#endif
 }
 
 //
@@ -268,7 +282,11 @@ virtual void onnegotiationneeded() {
 }
 virtual void onicecandidate(xrtc::RTCIceCandidate & ice) {
     return_assert(m_sink);
+#if defined(OBJC)
+    [m_sink OnIceCandidate:ice.candidate sdpMid:ice.sdpMid sdpMLineIndex:ice.sdpMLineIndex];
+#else
     m_sink->OnIceCandidate(ice.candidate, ice.sdpMid, ice.sdpMLineIndex);
+#endif
 }
 virtual void onsignalingstatechange(int state) {
     return_assert(m_sink);
@@ -276,30 +294,49 @@ virtual void onsignalingstatechange(int state) {
 virtual void onaddstream(xrtc::MediaStreamPtr stream) { // remote stream
     return_assert(m_pc.get());
     return_assert(m_sink);
-
+#if defined(OBJC)
+    [m_sink OnRemoteStream:ADD_ACTION];
+#else
     m_sink->OnRemoteStream(ADD_ACTION);
+#endif
 }
 virtual void onremovestream(xrtc::MediaStreamPtr stream) {
     return_assert(m_pc.get());
     return_assert(m_sink);
-
-    m_pc->removeStream(stream);
+#if defined(OBJC)
+    [m_sink OnRemoteStream:REMOVE_ACTION];
+#else
     m_sink->OnRemoteStream(REMOVE_ACTION);
+#endif
 }
 virtual void oniceconnectionstatechange(int state)  {
     return_assert(m_pc.get());
 }
 virtual void onsuccess(xrtc::RTCSessionDescription &desc) {
     return_assert(m_sink);
+#if defined(OBJC)
+    [m_sink OnSessionDescription:desc.type sdp:desc.sdp];
+#else
     m_sink->OnSessionDescription(desc.type, desc.sdp);
+#endif
 }
 virtual void onfailure(const xrtc::DOMString &error) {
     return_assert(m_sink);
+#if defined(OBJC)
+    [m_sink OnFailureMesssage: "onfailure: " + error];
+#else
     m_sink->OnFailureMesssage("onfailure: " + error);
+#endif
+
 }
 virtual void onerror() {
     return_assert(m_sink);
+#if defined(OBJC)
+    [m_sink OnFailureMesssage: "onerror: "];
+#else
     m_sink->OnFailureMesssage("onerror: ");
+#endif
+
 }
 
 };
