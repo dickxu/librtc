@@ -67,38 +67,46 @@ typedef struct _video_frame {
 // The interface of video render:
 //  OnSize called when resolution changes.
 //  OnFrame called when having decoded data.
-@interface IRtcRender : NSObject {
-}
+@protocol IRtcRender
 
+@required
 - (void) OnSize:(int)width height:(int)value;
+
+@required
 - (void) OnFrame:(const video_frame_t *)frame;
 
 @end
+typedef NSObject<IRtcRender> IRtcRender;
 
 
 //>
 // For receving notification from IRtcCenter
-@interface IRtcSink : NSObject {
-}
+@protocol IRtcSink
 
 // Return media sdp of local a/v, which should be sent to remote peer
+@required
 - (void) OnSessionDescription:(const std::string &)type sdp:(const std::string &)str;
 
 // Return ice candidate of current peer connection, which should be sent to remote peer
+@required
 - (void) OnIceCandidate:(const std::string &)candidate sdpMid:(const std::string &)mid sdpMLineIndex:(int)index;
 
 // Notify the status of remote stream(ADD or REMOVE)
 // @param action: refer to action_t
+@required
 - (void) OnRemoteStream:(int)action;
 
 // This callback will be activated when IRtcCenter::GetUserMedia()
 // @param error: 0 if OK, else fail
 // @param errstr: error message
+@required
 - (void) OnGetUserMedia:(int)error errstr:(std::string)str;
 
+@required
 - (void) OnFailureMesssage:(std::string)str;
 
 @end
+typedef NSObject<IRtcSink> IRtcSink;
 
 #else
 
@@ -208,8 +216,8 @@ public:
 extern "C" {
 bool        xrtc_init();
 void        xrtc_uninit();
-bool        xrtc_create(IRtcCenter * &rtc);
-void        xrtc_destroy(IRtcCenter * rtc);
+bool        xrtc_create(IRtcCenter * &prtc);
+void        xrtc_destroy(IRtcCenter * prtc);
 }
 
 

@@ -3,6 +3,8 @@ add_definitions(
     -DPOSIX
     -DOSX
     -DWEBRTC_MAC
+    -DOBJC
+    -x objective-c++
 )
 
 set(XCODE_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer")

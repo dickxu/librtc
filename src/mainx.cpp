@@ -356,20 +356,19 @@ void xrtc_uninit()
 {
 }
 
-bool xrtc_create(IRtcCenter * &rtc)
+bool xrtc_create(IRtcCenter * &prtc)
 {
-    rtc = NULL;
-    CRtcCenter *pRtc = new CRtcCenter();
-    if (!pRtc->Init()) {
-        delete pRtc;
-        pRtc = NULL;
+    prtc = new CRtcCenter();
+    if (!((CRtcCenter *)prtc)->Init()) {
+        delete prtc;
+        prtc = NULL;
     }
-    rtc = (IRtcCenter *)pRtc;
-    return (rtc != NULL);
+    return (prtc != NULL);
 }
 
-void xrtc_destroy(IRtcCenter *rtc)
+void xrtc_destroy(IRtcCenter *prtc)
 {
-    return_assert(rtc);
-    delete rtc;
+    return_assert(prtc);
+    delete prtc;
 }
+
