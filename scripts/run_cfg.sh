@@ -9,6 +9,7 @@ WEBRTC_URL=http://webrtc.googlecode.com/svn/stable
 #WEBRTC_URL=http://webrtc.googlecode.com/svn/trunk
 WEBRTC_REV=5301
 OUT=
+LIBDIR=
 
 echox() { 
     [ $# -gt 1 ] && b="\033[${1}m" && e="\033[00m" && shift
@@ -72,7 +73,7 @@ detect_env() {
         echor "[Err] only support targets: UNIX, MAC, ANDROID, IOS and IOS-SIM"
         exit 1
     fi
-
+    LIBDIR=$ROOT/libs/$OUT
 }
 
 
@@ -183,13 +184,13 @@ pack_webrtc() {
         ldflags="-framework CoreServices -framework CoreAudio -framework CoreVideo -framework QTKit -framework OpenGL -framework AudioToolbox -framework ApplicationServices -framework Foundation -framework AppKit -framework Security -framework IOKit -framework SystemConfiguration -lcrypto -lssl -lc -lstdc++"
         make_so $target
         check_err "fail to gen shared .so"
-        mkdir -p $ROOT/lib/$OUT && cp lib$target.so $ROOT/lib/$OUT
+        mkdir -p $LIBDIR && cp -f lib$target.so $LIBDIR
     fi
 
     # for static lib
     make_archive $target 2>/dev/null
     check_err "fail to gen archive .a"
-    mkdir -p $ROOT/lib/$OUT && cp lib$target.a $ROOT/lib/$OUT
+    mkdir -p $LIBDIR && cp -f lib$target.a $LIBDIR
 }
 
 test_webrtc() {
@@ -247,8 +248,8 @@ build_xrtc() {
     popd
     popd
 
-    mkdir -p $ROOT/lib/$OUT
-    [ -d $ROOT/bld/lib/$BUILD_TYPE ] && cp -f $ROOT/bld/lib/$BUILD_TYPE/lib*.a $ROOT/lib/$OUT 2>/dev/null
+    mkdir -p $LIBDIR
+    [ -d $ROOT/bld/lib/$BUILD_TYPE ] && cp -f $ROOT/bld/lib/$BUILD_TYPE/lib*.a $LIBDIR 2>/dev/null
 }
 
 usage() {
