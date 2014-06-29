@@ -348,12 +348,14 @@ virtual void onerror() {
 bool xrtc_init()
 {
     talk_base::LogMessage::SetDiagnosticMode(true);
-    //talk_base::LogMessage::LogToDebug(talk_base::LS_INFO);
+    talk_base::LogMessage::LogToDebug(talk_base::LS_INFO);
+    talk_base::InitializeSSL();
     return true;
 }
 
 void xrtc_uninit()
 {
+    talk_base::CleanupSSL();
 }
 
 bool xrtc_create(IRtcCenter * &prtc)

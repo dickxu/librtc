@@ -4,6 +4,7 @@
 #include "talk/base/common.h"
 #include "talk/base/scoped_ptr.h"
 #include "talk/base/logging.h"
+#include "talk/base/ssladapter.h"
 #include "talk/base/physicalsocketserver.h"
 #include "talk/media/base/mediaengine.h"
 #include "talk/app/webrtc/jsep.h"
