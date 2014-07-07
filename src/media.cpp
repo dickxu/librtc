@@ -37,14 +37,14 @@ void NavigatorUserMedia::getUserMedia (const MediaStreamConstraints & constraint
 
     NavigatorUserMediaError error;
 
-    std::string slabel = "local stream";
+    std::string slabel = kStreamLabel;
     ubase::zeroptr<MediaStream> stream = CreateMediaStream(slabel, _pc_factory, NULL);
     return_assert(stream.get());
     
     // for audio track
     if (constraints.audio) {
         LOGD("get audio track and add it to stream");
-        std::string alabel = "local audio track";
+        std::string alabel = kAudioLabel;
         ubase::zeroptr<MediaStreamTrack> audio_track = CreateMediaStreamTrack(XRTC_AUDIO, alabel, NULL, _pc_factory, NULL);
         if (audio_track->getptr() == NULL) {
             LOGW("fail to get audio track")
@@ -58,7 +58,7 @@ void NavigatorUserMedia::getUserMedia (const MediaStreamConstraints & constraint
     // for video track
     if (constraints.video) {
         LOGD("get video track and add it to stream");
-        std::string vlabel = "local video track";
+        std::string vlabel = kVideoLabel;
         ubase::zeroptr<MediaStreamTrack> video_track = CreateMediaStreamTrack(XRTC_VIDEO, vlabel, NULL, _pc_factory, NULL);
         if (video_track->getptr() == NULL) {
             LOGW("fail to get video track")
