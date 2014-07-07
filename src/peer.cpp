@@ -79,30 +79,20 @@ void * CRTCPeerConnection::getptr()
     return m_conn.get();
 }
 
-RTCSessionDescription CRTCPeerConnection::localDescription() 
+DOMString CRTCPeerConnection::localDescription()
 {
-    RTCSessionDescription rtcdesc;
-    returnv_assert(m_conn.get(), rtcdesc);
-
-    const webrtc::SessionDescriptionInterface *desc = m_conn->local_description();
-    if (desc) {
-        rtcdesc.type = desc->type();
-        desc->ToString(&rtcdesc.sdp);
-    }
-    return rtcdesc;
+    DOMString json;
+    returnv_assert(m_conn.get(), json);
+    Convert2Json(m_conn->local_description(), json);
+    return json;
 }
 
-RTCSessionDescription CRTCPeerConnection::remoteDescription() 
+DOMString CRTCPeerConnection::remoteDescription()
 {
-    RTCSessionDescription rtcdesc;
-    returnv_assert(m_conn.get(), rtcdesc);
-
-    const webrtc::SessionDescriptionInterface *desc = m_conn->remote_description();
-    if (desc) {
-        rtcdesc.type = desc->type();
-        desc->ToString(&rtcdesc.sdp);
-    }
-    return rtcdesc;
+    DOMString json;
+    returnv_assert(m_conn.get(), json);
+    Convert2Json(m_conn->remote_description(), json);
+    return json;
 }
 
 RTCSignalingState CRTCPeerConnection::signalingState() 
@@ -146,21 +136,23 @@ void CRTCPeerConnection::createAnswer (const MediaConstraints & constraints)
     m_conn->CreateAnswer((webrtc::CreateSessionDescriptionObserver *)m_observer, NULL);
 }
 
-void CRTCPeerConnection::setLocalDescription (const RTCSessionDescription & description)
+void CRTCPeerConnection::setLocalDescription (const DOMString & json)
 {
     return_assert(m_conn.get());
-    webrtc::SessionDescriptionInterface* desp(webrtc::CreateSessionDescription(description.type, description.sdp));
-    if (desp) {
-        m_conn->SetLocalDescription(DummySetSessionDescriptionObserver::Create(), desp);
+    
+    webrtc::SessionDescriptionInterface* description = NULL;
+    if (Convert2SDP(json, description) && description) {
+        m_conn->SetLocalDescription(DummySetSessionDescriptionObserver::Create(), description);
     }
 }
 
-void CRTCPeerConnection::setRemoteDescription (const RTCSessionDescription & description)
+void CRTCPeerConnection::setRemoteDescription (const DOMString & json)
 {
     return_assert(m_conn.get());
-    webrtc::SessionDescriptionInterface* desp(webrtc::CreateSessionDescription(description.type, description.sdp));
-    if (desp) {
-        m_conn->SetRemoteDescription(DummySetSessionDescriptionObserver::Create(), desp);
+    
+    webrtc::SessionDescriptionInterface* description = NULL;
+    if (Convert2SDP(json, description) && description) {
+        m_conn->SetRemoteDescription(DummySetSessionDescriptionObserver::Create(), description);
     }
 }
 
@@ -168,12 +160,13 @@ void CRTCPeerConnection::updateIce (const RTCConfiguration & configuration, cons
 {
 }
 
-void CRTCPeerConnection::addIceCandidate (const RTCIceCandidate & ice)
+void CRTCPeerConnection::addIceCandidate (const DOMString & json)
 {
     return_assert(m_conn.get());
-    talk_base::scoped_ptr<webrtc::IceCandidateInterface> candidate(
-            webrtc::CreateIceCandidate(ice.sdpMid, ice.sdpMLineIndex, ice.candidate));
-    m_conn->AddIceCandidate(candidate.get());
+    webrtc::IceCandidateInterface * candidate = NULL;
+    if (Convert2ICE(json, candidate) && candidate) {
+        m_conn->AddIceCandidate(candidate);
+    }
 }
 
 sequence<MediaStreamPtr> CRTCPeerConnection::getLocalStreams ()

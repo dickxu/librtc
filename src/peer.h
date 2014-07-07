@@ -44,8 +44,8 @@ public:
     virtual ~CRTCPeerConnection ();
     virtual void * getptr();
 
-    RTCSessionDescription localDescription();
-    RTCSessionDescription remoteDescription();
+    DOMString localDescription();
+    DOMString remoteDescription();
     RTCSignalingState signalingState();
     RTCIceGatheringState iceGatheringState();
     RTCIceConnectionState iceConnectionState();
@@ -53,10 +53,10 @@ public:
     virtual void setParams (const RTCConfiguration & configuration, const MediaConstraints & constraints);
     virtual void createOffer (const MediaConstraints & constraints);
     virtual void createAnswer (const MediaConstraints & constraints);
-    virtual void setLocalDescription (const RTCSessionDescription & description);
-    virtual void setRemoteDescription (const RTCSessionDescription & description);
+    virtual void setLocalDescription (const DOMString & description);
+    virtual void setRemoteDescription (const DOMString & description);
     virtual void updateIce (const RTCConfiguration & configuration, const MediaConstraints & constraints);
-    virtual void addIceCandidate (const RTCIceCandidate & candidate);
+    virtual void addIceCandidate (const DOMString & candidate);
 
     virtual sequence<MediaStreamPtr> getLocalStreams ();
     virtual sequence<MediaStreamPtr> getRemoteStreams ();

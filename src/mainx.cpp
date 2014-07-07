@@ -222,31 +222,21 @@ virtual long AnswerCall() {
     return UBASE_S_OK;
 }
 
-virtual long SetLocalDescription(const std::string &type, const std::string &sdp) {
+virtual long SetLocalDescription(const std::string &sdp) {
     returnv_assert (m_pc.get(), UBASE_E_INVALIDPTR);
-    xrtc::RTCSessionDescription desc;
-    desc.type = type;
-    desc.sdp = sdp;
-    m_pc->setLocalDescription(desc);
+    m_pc->setLocalDescription(sdp);
     return UBASE_S_OK;
 }
 
-virtual long SetRemoteDescription(const std::string & type, const std::string &sdp) {
+virtual long SetRemoteDescription(const std::string &sdp) {
     returnv_assert (m_pc.get(), UBASE_E_INVALIDPTR);
-    xrtc::RTCSessionDescription desc;
-    desc.type = type;
-    desc.sdp = sdp;
-    m_pc->setRemoteDescription(desc);
+    m_pc->setRemoteDescription(sdp);
     return UBASE_S_OK;
 }
 
-virtual long AddIceCandidate(const std::string &candidate, const std::string &sdpMid, int sdpMLineIndex) {
+virtual long AddIceCandidate(const std::string &candidate) {
     returnv_assert (m_pc.get(), UBASE_E_INVALIDPTR);
-    xrtc::RTCIceCandidate ice;
-    ice.candidate = candidate;
-    ice.sdpMid = sdpMid;
-    ice.sdpMLineIndex = sdpMLineIndex;
-    m_pc->addIceCandidate(ice);
+    m_pc->addIceCandidate(candidate);
     return UBASE_S_OK;
 }
 
@@ -280,12 +270,12 @@ virtual void ErrorCallback(xrtc::NavigatorUserMediaError &error)  {
 virtual void onnegotiationneeded() {
     return_assert(m_sink);
 }
-virtual void onicecandidate(xrtc::RTCIceCandidate & ice) {
+virtual void onicecandidate(const xrtc::DOMString & candidate) {
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnIceCandidate:ice.candidate sdpMid:ice.sdpMid sdpMLineIndex:ice.sdpMLineIndex];
+    [m_sink OnIceCandidate:candidate];
 #else
-    m_sink->OnIceCandidate(ice.candidate, ice.sdpMid, ice.sdpMLineIndex);
+    m_sink->OnIceCandidate(candidate);
 #endif
 }
 virtual void onsignalingstatechange(int state) {
@@ -312,12 +302,12 @@ virtual void onremovestream(xrtc::MediaStreamPtr stream) {
 virtual void oniceconnectionstatechange(int state)  {
     return_assert(m_pc.get());
 }
-virtual void onsuccess(xrtc::RTCSessionDescription &desc) {
+virtual void onsuccess(const xrtc::DOMString &sdp) {
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnSessionDescription:desc.type sdp:desc.sdp];
+    [m_sink OnSessionDescription:sdp];
 #else
-    m_sink->OnSessionDescription(desc.type, desc.sdp);
+    m_sink->OnSessionDescription(sdp);
 #endif
 }
 virtual void onfailure(const xrtc::DOMString &error) {

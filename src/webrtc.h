@@ -1,6 +1,8 @@
 #ifndef _WEBRTC_H_
 #define _WEBRTC_H_
 
+#define JSONCPP_RELATIVE_PATH
+#include "talk/base/json.h"
 #include "talk/base/common.h"
 #include "talk/base/scoped_ptr.h"
 #include "talk/base/logging.h"
@@ -37,6 +39,11 @@ ubase::zeroptr<MediaStreamTrack> CreateMediaStreamTrack(
         talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory, 
         talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> ptrack);
 
+bool Convert2Json(const webrtc::SessionDescriptionInterface* description, std::string &json);
+bool Convert2Json(const webrtc::IceCandidateInterface* candidate, std::string &json);
+bool Convert2ICE(const std::string &json, webrtc::IceCandidateInterface* &candidate);
+bool Convert2SDP(const std::string &json, webrtc::SessionDescriptionInterface* &description);
+    
 } //namespace xrtc
 
 

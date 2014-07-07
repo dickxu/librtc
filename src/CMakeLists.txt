@@ -6,6 +6,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/ubase
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/third_party/webrtc/trunk
+    ${PROJECT_SOURCE_DIR}/third_party/webrtc/trunk/third_party/jsoncpp/source/include
 )
 
 # For librtc
@@ -16,6 +17,7 @@ set(librtc_LIB_SRCS
     observer.cpp
     stream.cpp
     track.cpp
+    webrtc.cpp
 )
 
 set(a_NAME rtc_static)

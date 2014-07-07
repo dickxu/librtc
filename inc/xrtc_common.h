@@ -165,17 +165,6 @@ const DOMString kRTCSdpType[] = {
     "answer",
 };
 
-struct RTCSessionDescription {
-    DOMString type; // kRTCSdpType
-    DOMString sdp;
-};
-
-struct RTCIceCandidate {
-    DOMString      candidate;
-    DOMString      sdpMid;
-    unsigned short sdpMLineIndex;
-};
-
 struct RTCIceServer {
     sequence<DOMString>     urls;
     DOMString               username;

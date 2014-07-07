@@ -85,11 +85,11 @@ typedef NSObject<IRtcRender> IRtcRender;
 
 // Return media sdp of local a/v, which should be sent to remote peer
 @required
-- (void) OnSessionDescription:(const std::string &)type sdp:(const std::string &)str;
+- (void) OnSessionDescription:(const std::string &)sdp;
 
 // Return ice candidate of current peer connection, which should be sent to remote peer
 @required
-- (void) OnIceCandidate:(const std::string &)candidate sdpMid:(const std::string &)mid sdpMLineIndex:(int)index;
+- (void) OnIceCandidate:(const std::string &)candidate;
 
 // Notify the status of remote stream(ADD or REMOVE)
 // @param action: refer to action_t
@@ -129,10 +129,10 @@ public:
     virtual ~IRtcSink() {}
 
     // Return media sdp of local a/v, which should be sent to remote peer
-    virtual void OnSessionDescription(const std::string &type, const std::string &sdp) = 0;
+    virtual void OnSessionDescription(const std::string &sdp) = 0;
 
     // Return ice candidate of current peer connection, which should be sent to remote peer
-    virtual void OnIceCandidate(const std::string &candidate, const std::string &sdpMid, int sdpMLineIndex) = 0;
+    virtual void OnIceCandidate(const std::string &candidate) = 0;
 
     // Notify the status of remote stream(ADD or REMOVE)
     // @param action: refer to action_t
@@ -194,23 +194,19 @@ public:
     virtual void Close() = 0;
 
     // To set sdp of local media into current peer connection
-    // @param type: [in] offer, pranswer, answer
-    // @param sdp:  [in] sdp of local media
+    // @param sdp:  [in] sdp of local media (json format, type: offer/pranswer/answer)
     // @return 0 if OK, else fail
-    virtual long SetLocalDescription(const std::string &type, const std::string &sdp) = 0;
+    virtual long SetLocalDescription(const std::string &sdp) = 0;
 
     // To set sdp of remote peer into current peer connection
-    // @param type: [in] offer, pranswer, answer
-    // @param sdp:  [in] sdp of remote media
+    // @param sdp:  [in] sdp of remote media (json format, type: offer/pranswer/answer)
     // @return 0 if OK, else fail
-    virtual long SetRemoteDescription(const std::string &type, const std::string &sdp) = 0;
+    virtual long SetRemoteDescription(const std::string &sdp) = 0;
 
     // To add remote ice candidate into current peer connection
-    // @param candidate:     [in] ice candidate
-    // @param sdpMid:        [in] ice sdp mid
-    // @param sdpMLineIndex: [in] ice sdp mline index
+    // @param candidate:     [in] ice candidate(json format)
     // @return 0 if OK, else fail
-    virtual long AddIceCandidate(const std::string &candidate, const std::string &sdpMid, int sdpMLineIndex) = 0;
+    virtual long AddIceCandidate(const std::string &candidate) = 0;
 };
 
 extern "C" {

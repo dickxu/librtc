@@ -99,16 +99,11 @@ void CRTCPeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterf
 {
     //LOGD("ok");
     return_assert (candidate);
-    std::string sdp;
-    if (!candidate->ToString(&sdp)) {
-        return;
+    
+    std::string json;
+    if (Convert2Json(candidate, json)) {
+        event_process1(m_pc, onicecandidate, json);
     }
-
-    RTCIceCandidate ice;
-    ice.candidate = sdp;
-    ice.sdpMid = candidate->sdp_mid();
-    ice.sdpMLineIndex = candidate->sdp_mline_index();
-    event_process1(m_pc, onicecandidate, ice);
 }
 
 // TODO(bemasc): Remove this once callers transition to OnIceGatheringChange.
@@ -119,14 +114,15 @@ void CRTCPeerConnectionObserver::OnIceComplete() {
 
 ///
 /// for webrtc::CreateSessionDescriptionObserver
-void CRTCPeerConnectionObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) 
+void CRTCPeerConnectionObserver::OnSuccess(webrtc::SessionDescriptionInterface* description) 
 {
     LOGD("ok");
-    return_assert(desc);
-    RTCSessionDescription rtcdesc;
-    rtcdesc.type = desc->type();
-    desc->ToString(&rtcdesc.sdp);
-    event_process1(m_pc, onsuccess, rtcdesc);
+    return_assert(description);
+    
+    std::string json;
+    if(Convert2Json(description, json)) {
+        event_process1(m_pc, onsuccess, json);
+    }
 }
 
 void CRTCPeerConnectionObserver::OnFailure(const std::string& error)

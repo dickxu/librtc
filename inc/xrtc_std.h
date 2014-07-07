@@ -144,20 +144,20 @@ public:
 class RTCPeerConnectionEventHandler {
 public:
     virtual void onnegotiationneeded()                  {}
-    virtual void onicecandidate(RTCIceCandidate & ice)  {}
+    virtual void onicecandidate(const DOMString & candidate)  {}
     virtual void onsignalingstatechange(int state)      {}
     virtual void onaddstream(MediaStreamPtr)            {}
     virtual void onremovestream(MediaStreamPtr)         {}
     virtual void oniceconnectionstatechange(int state)  {}
 
-    virtual void onsuccess(RTCSessionDescription &desc) {}
+    virtual void onsuccess(const DOMString &sdp)        {}
     virtual void onfailure(const DOMString &error)      {}
     virtual void onerror()                              {}
 };
 
 class RTCPeerConnection : public EventTarget  {
-    readonly_attribute (RTCSessionDescription,  localDescription);
-    readonly_attribute (RTCSessionDescription,  remoteDescription);
+    readonly_attribute (DOMString,  localDescription);
+    readonly_attribute (DOMString,  remoteDescription);
     readonly_attribute (RTCSignalingState,      signalingState);
     readonly_attribute (RTCIceGatheringState,   iceGatheringState);
     readonly_attribute (RTCIceConnectionState,  iceConnectionState);
@@ -171,11 +171,11 @@ public:
     virtual void setParams (const RTCConfiguration & configuration, const MediaConstraints & constraints) {}
     virtual void createOffer (const MediaConstraints & constraints) = 0;
     virtual void createAnswer (const MediaConstraints & constraints) = 0;
-    virtual void setLocalDescription (const RTCSessionDescription & description) = 0;
-    virtual void setRemoteDescription (const RTCSessionDescription & description) = 0;
+    virtual void setLocalDescription (const DOMString & description) = 0;
+    virtual void setRemoteDescription (const DOMString & description) = 0;
 
     virtual void updateIce (const RTCConfiguration & configuration, const MediaConstraints & constraints) {}
-    virtual void addIceCandidate (const RTCIceCandidate & candidate) = 0;
+    virtual void addIceCandidate (const DOMString & candidate) = 0;
 
     virtual sequence<MediaStreamPtr> getLocalStreams ()         = 0;
     virtual sequence<MediaStreamPtr> getRemoteStreams ()        = 0;
