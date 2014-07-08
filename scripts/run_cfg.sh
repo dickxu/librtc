@@ -5,9 +5,9 @@
 ## build config
 ROOT=`pwd`/..
 HOST=`uname`
-WEBRTC_URL=http://webrtc.googlecode.com/svn/stable
-#WEBRTC_URL=http://webrtc.googlecode.com/svn/trunk
-WEBRTC_REV=5301
+#WEBRTC_URL=http://webrtc.googlecode.com/svn/stable
+WEBRTC_URL=http://webrtc.googlecode.com/svn/trunk
+WEBRTC_REV=6613
 OUT=
 LIBDIR=
 
