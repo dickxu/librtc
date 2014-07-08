@@ -1,7 +1,7 @@
 #ifndef _UBASE_REFCOUNT_H_
 #define _UBASE_REFCOUNT_H_
 
-#include "atomic.h"
+#include "ubase/atomic.h"
 
 namespace ubase
 {

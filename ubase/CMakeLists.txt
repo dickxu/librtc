@@ -13,6 +13,7 @@ set(libubase_LIB_SRCS
     atomic.cpp      
     misc.cpp        
     mutex.cpp
+    ubase.cpp
 )
 
 set(a_NAME ubase_static)
