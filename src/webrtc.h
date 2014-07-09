@@ -19,10 +19,6 @@
 
 namespace xrtc {
 
-const char kStreamLabel[] = "local_stream";
-const char kAudioLabel[] = "audio_label";
-const char kVideoLabel[] = "video_label";
-
 void GetUserMedia(
         const MediaStreamConstraints & constraints, 
         NavigatorUserMediaCallback *sink,

@@ -125,20 +125,21 @@ virtual long GetUserMedia(bool has_audio, bool has_video) {
 }
 
 virtual long CreatePeerConnection() {
-    std::vector<ice_server_t> servers;
     ice_server_t server;
     server.uri = xrtc::kDefaultIceServer; // default google stun server
+
+    ice_servers_t servers;
     servers.push_back(server);
     return CreatePeerConnection(servers);
 }
 
-virtual long CreatePeerConnection(std::vector<ice_server_t> ice_servers) {
+virtual long CreatePeerConnection(ice_servers_t ice_servers) {
     m_pc_factory = webrtc::CreatePeerConnectionFactory();
     returnv_assert (m_pc_factory.get(), UBASE_E_FAIL);
 
     webrtc::PeerConnectionInterface::IceServers servers;
 
-    std::vector<ice_server_t>::iterator iter;
+    ice_servers_t::iterator iter;
     for (iter = ice_servers.begin(); iter != ice_servers.end(); iter++) {
         webrtc::PeerConnectionInterface::IceServer server;
         server.uri = iter->uri;

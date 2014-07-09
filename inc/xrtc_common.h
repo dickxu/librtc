@@ -87,7 +87,11 @@ enum media_t {
 const DOMString kUnknownKind = "unknown";
 const DOMString kAudioKind = "audio";
 const DOMString kVideoKind = "video";
-//const DOMString kStreamLabel = "stream";
+
+const DOMString kAudioLabel = "audio_label";
+const DOMString kVideoLabel = "video_label";
+const DOMString kStreamLabel = "local_stream";
+
 const DOMString kDefaultIceServer = "stun:stun.l.google.com:19302";
 
 

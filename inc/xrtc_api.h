@@ -67,6 +67,7 @@ typedef struct _ice_server {
     std::string username;
     std::string password;
 }ice_server_t;
+typedef std::vector<ice_server_t> ice_servers_t;
 
 
 #if defined(OBJC) // For OBJC intefaces
@@ -172,7 +173,7 @@ public:
     // To create peer conncetion
     // @return 0 if OK, else fail
     virtual long CreatePeerConnection() = 0;
-    virtual long CreatePeerConnection(std::vector<ice_server_t> servers) = 0;
+    virtual long CreatePeerConnection(ice_servers_t servers) = 0;
 
     // To add local stream (got by GetUserMedia) into peer connection(got by CreatePeerConnection)
     // @return 0 if OK, else fail
