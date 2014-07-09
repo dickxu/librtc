@@ -24,6 +24,7 @@
 
 #include "xrtc_std.h"
 #include "webrtc.h"
+#include "constraints.h"
 #include "ubase/error.h"
 
 namespace xrtc {
@@ -58,8 +59,16 @@ bool Init(
 
     returnv_assert(pc_factory.get(), false);
     if (kind == kAudioKind) {
-        if (!m_source.get())
-            m_source = pc_factory->CreateAudioSource(NULL);
+        if (!m_source.get()) {
+            WebrtcMediaConstraints constraints;
+            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kEchoCancellation, true);
+            constraints.AddOptional(webrtc::MediaConstraintsInterface::kExperimentalEchoCancellation, true);
+            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kAutoGainControl, true);
+            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kNoiseSuppression, true);
+            constraints.AddOptional(webrtc::MediaConstraintsInterface::kExperimentalNoiseSuppression, true);
+            constraints.AddOptional(webrtc::MediaConstraintsInterface::kHighpassFilter, true);
+            m_source = pc_factory->CreateAudioSource(&constraints);
+        }
         m_track = pc_factory->CreateAudioTrack(label, (webrtc::AudioSourceInterface *)(m_source.get()));
     }else if (kind == kVideoKind) {
         if (!m_source.get()) {
