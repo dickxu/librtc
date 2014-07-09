@@ -37,7 +37,7 @@ void NavigatorUserMedia::getUserMedia (const MediaStreamConstraints & constraint
 
     NavigatorUserMediaError error;
 
-    std::string slabel = kStreamLabel;
+    std::string slabel = kLocalStreamLabel;
     ubase::zeroptr<MediaStream> stream = CreateMediaStream(slabel, _pc_factory, NULL);
     return_assert(stream.get());
     

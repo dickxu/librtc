@@ -262,8 +262,12 @@ virtual long AddIceCandidate(const std::string &candidate) {
 }
 
 virtual void Close() {
-    return_assert (m_pc.get());
-    m_pc->close();
+    if (m_pc.get()) {
+        m_pc->close();
+        m_pc = NULL;
+    }
+    m_pc_factory = NULL;
+    m_local_stream = NULL;
 }
 
 //
@@ -322,6 +326,11 @@ virtual void onremovestream(xrtc::MediaStreamPtr stream) {
 }
 virtual void oniceconnectionstatechange(int state)  {
     return_assert(m_pc.get());
+#if defined(OBJC)
+    [m_sink OnIceConnectionState:state];
+#else
+    m_sink->OnIceConnectionState(state);
+#endif
 }
 virtual void onsuccess(const xrtc::DOMString &sdp) {
     return_assert(m_sink);

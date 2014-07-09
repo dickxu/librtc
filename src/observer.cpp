@@ -28,7 +28,6 @@ CRTCPeerConnectionObserver::~CRTCPeerConnectionObserver()
 /// for webrtc::PeerConnectionObserver
 void CRTCPeerConnectionObserver::OnError() 
 {
-    LOGD("ok");
     event_process0(m_pc, onerror);
 }
 
@@ -36,7 +35,6 @@ void CRTCPeerConnectionObserver::OnError()
 void CRTCPeerConnectionObserver::OnSignalingChange(
         webrtc::PeerConnectionInterface::SignalingState new_state) 
 {
-    //LOGD("ok");
     int state = (int)new_state;
     event_process1(m_pc, onsignalingstatechange, state);
 }
@@ -45,14 +43,15 @@ void CRTCPeerConnectionObserver::OnSignalingChange(
 // TODO(bemasc): Remove once callers transition to OnSignalingChange.
 void CRTCPeerConnectionObserver::OnStateChange(webrtc::PeerConnectionObserver::StateType state_changed) 
 {
-    //LOGD("ok");
+    LOGD("from webrtc::PeerConnectionObserver, state_changed="<<state_changed);
 }
 
 // Triggered when media is received on a new stream from remote peer.
 void CRTCPeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface* stream) 
 {
-    LOGD("ok");
     return_assert(stream);
+    
+    // Package the stream into MediaStreamPtr which callback for user, e.g. set video render
     MediaStreamPtr mstream = CreateMediaStream("", NULL, stream);
     event_process1(m_pc, onaddstream, mstream);
 }
@@ -60,8 +59,9 @@ void CRTCPeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface* strea
 // Triggered when a remote peer close a stream.
 void CRTCPeerConnectionObserver::OnRemoveStream(webrtc::MediaStreamInterface* stream) 
 {
-    LOGD("ok");
     return_assert(stream);
+    
+    // Package the stream into MediaStreamPtr which callback for user, e.g. remove video render
     MediaStreamPtr mstream = CreateMediaStream("", NULL, stream);
     event_process1(m_pc, onremovestream, mstream);
 }
@@ -69,12 +69,13 @@ void CRTCPeerConnectionObserver::OnRemoveStream(webrtc::MediaStreamInterface* st
 // Triggered when a remote peer open a data channel.
 // TODO(perkj): Make pure virtual.
 void CRTCPeerConnectionObserver::OnDataChannel(webrtc::DataChannelInterface* data_channel) 
-{}
+{
+    LOGD("from webrtc::PeerConnectionObserver");
+}
 
 // Triggered when renegotation is needed, for example the ICE has restarted.
 void CRTCPeerConnectionObserver::OnRenegotiationNeeded() 
 {
-    //LOGD("ok");
     event_process0(m_pc, onnegotiationneeded);
 }
 
@@ -82,7 +83,6 @@ void CRTCPeerConnectionObserver::OnRenegotiationNeeded()
 void CRTCPeerConnectionObserver::OnIceConnectionChange(
         webrtc::PeerConnectionInterface::IceConnectionState new_state) 
 {
-    //LOGD("ok");
     int state = (int)new_state;
     event_process1(m_pc, oniceconnectionstatechange, state);
 }
@@ -91,13 +91,12 @@ void CRTCPeerConnectionObserver::OnIceConnectionChange(
 void CRTCPeerConnectionObserver::OnIceGatheringChange(
         webrtc::PeerConnectionInterface::IceGatheringState new_state) 
 {
-    //LOGD("ok");
+    LOGD("from webrtc::PeerConnectionObserver, new_state="<<new_state);
 }
 
 // New Ice candidate have been found.
 void CRTCPeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
 {
-    //LOGD("ok");
     return_assert (candidate);
     
     std::string json;
@@ -109,14 +108,13 @@ void CRTCPeerConnectionObserver::OnIceCandidate(const webrtc::IceCandidateInterf
 // TODO(bemasc): Remove this once callers transition to OnIceGatheringChange.
 // All Ice candidates have been found.
 void CRTCPeerConnectionObserver::OnIceComplete() {
-    //LOGD("ok");
+    LOGD("from webrtc::PeerConnectionObserver");
 }
 
 ///
 /// for webrtc::CreateSessionDescriptionObserver
 void CRTCPeerConnectionObserver::OnSuccess(webrtc::SessionDescriptionInterface* description) 
 {
-    LOGD("ok");
     return_assert(description);
     
     std::string json;
@@ -127,7 +125,6 @@ void CRTCPeerConnectionObserver::OnSuccess(webrtc::SessionDescriptionInterface* 
 
 void CRTCPeerConnectionObserver::OnFailure(const std::string& error)
 {
-    LOGD("ok");
     event_process1(m_pc, onfailure, error);
 }
 

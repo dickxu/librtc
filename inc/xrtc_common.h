@@ -90,7 +90,9 @@ const DOMString kVideoKind = "video";
 
 const DOMString kAudioLabel = "audio_label";
 const DOMString kVideoLabel = "video_label";
-const DOMString kStreamLabel = "local_stream";
+
+const DOMString kLocalStreamLabel = "local_stream_label";
+const DOMString kRemoteStreamLabel = "remote_stream_label";
 
 const DOMString kDefaultIceServer = "stun:stun.l.google.com:19302";
 

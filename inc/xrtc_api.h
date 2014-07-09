@@ -37,6 +37,16 @@ enum action_t {
     REMOVE_ACTION,
 };
 
+enum ice_state_t {
+    kIceNew,
+    kIceChecking,
+    kIceConnected,
+    kIceCompleted,
+    kIceFailed,
+    kIceDisconnected,
+    kIceClosed,
+};
+
 enum color_t {
     UnknownFmt = 0,
     I420Fmt,
@@ -110,6 +120,11 @@ typedef NSObject<IRtcRender> IRtcRender;
 @required
 - (void) OnGetUserMedia:(int)error errstr:(std::string)str;
 
+// This callback for ICE connection state
+// @param state: refer to ice_state_t
+@required
+- (void) OnIceConnectionState:(int)state;
+
 @required
 - (void) OnFailureMesssage:(std::string)str;
 
@@ -150,6 +165,10 @@ public:
     // @param error: 0 if OK, else fail
     // @param errstr: error message
     virtual void OnGetUserMedia(int error, std::string errstr) = 0;
+
+    // This callback for ICE connection state
+    // @param state: refer to ice_state_t
+    virtual void OnIceConnectionState(int state) = 0;
 
     virtual void OnFailureMesssage(std::string errstr) = 0;
 };

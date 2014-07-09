@@ -40,6 +40,7 @@ bool Init(
 {
     m_stream = stream;
     if (!m_stream) {
+        // for remote stream, donot create it; this branch only for creating local stream
         if (pc_factory) {
             m_stream = pc_factory->CreateLocalMediaStream(label);
         }
