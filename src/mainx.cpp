@@ -1,6 +1,7 @@
 #include "xrtc_api.h"
 #include "xrtc_std.h"
 #include "webrtc.h"
+#include "xrtc_common.h"
 #include "ubase/error.h"
 
 class WebrtcRender : public webrtc::VideoRendererInterface {
@@ -124,10 +125,29 @@ virtual long GetUserMedia(bool has_audio, bool has_video) {
 }
 
 virtual long CreatePeerConnection() {
+    std::vector<ice_server_t> servers;
+    ice_server_t server;
+    server.uri = xrtc::kDefaultIceServer; // default google stun server
+    servers.push_back(server);
+    return CreatePeerConnection(servers);
+}
+
+virtual long CreatePeerConnection(std::vector<ice_server_t> ice_servers) {
     m_pc_factory = webrtc::CreatePeerConnectionFactory();
     returnv_assert (m_pc_factory.get(), UBASE_E_FAIL);
 
-    m_pc = xrtc::CreatePeerConnection(m_pc_factory);
+    webrtc::PeerConnectionInterface::IceServers servers;
+
+    std::vector<ice_server_t>::iterator iter;
+    for (iter = ice_servers.begin(); iter != ice_servers.end(); iter++) {
+        webrtc::PeerConnectionInterface::IceServer server;
+        server.uri = iter->uri;
+        server.username = iter->username;
+        server.password = iter->password;
+        servers.push_back(server);
+    }
+
+    m_pc = xrtc::CreatePeerConnection(servers, m_pc_factory);
     returnv_assert (m_pc.get(), UBASE_E_FAIL);
     m_pc->Put_EventHandler((xrtc::RTCPeerConnectionEventHandler *)this);
     return UBASE_S_OK;

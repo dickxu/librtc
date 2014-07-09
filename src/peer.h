@@ -38,7 +38,9 @@ private:
     talk_base::scoped_refptr<webrtc::PeerConnectionInterface> m_conn;
 
 public:
-    bool Init(talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory);
+    bool Init(
+        webrtc::PeerConnectionInterface::IceServers servers,
+        talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory);
 
     explicit CRTCPeerConnection ();
     virtual ~CRTCPeerConnection ();

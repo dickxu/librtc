@@ -29,6 +29,7 @@ void GetUserMedia(
         talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory);
 
 ubase::zeroptr<RTCPeerConnection> CreatePeerConnection(
+        webrtc::PeerConnectionInterface::IceServers servers,
         talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory);
 
 ubase::zeroptr<MediaStream> CreateMediaStream(

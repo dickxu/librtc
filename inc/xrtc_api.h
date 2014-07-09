@@ -26,6 +26,7 @@
 #define _XRTC_API_H_
 
 #include <string>
+#include <vector>
 
 #if defined(OBJC)
 #import <Foundation/Foundation.h>
@@ -60,6 +61,12 @@ typedef struct _video_frame {
     int size;           // size of data buffer
     unsigned char *data;
 }video_frame_t;
+
+typedef struct _ice_server {
+    std::string uri;
+    std::string username;
+    std::string password;
+}ice_server_t;
 
 
 #if defined(OBJC) // For OBJC intefaces
@@ -165,6 +172,7 @@ public:
     // To create peer conncetion
     // @return 0 if OK, else fail
     virtual long CreatePeerConnection() = 0;
+    virtual long CreatePeerConnection(std::vector<ice_server_t> servers) = 0;
 
     // To add local stream (got by GetUserMedia) into peer connection(got by CreatePeerConnection)
     // @return 0 if OK, else fail
