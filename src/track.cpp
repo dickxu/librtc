@@ -61,12 +61,26 @@ bool Init(
     if (kind == kAudioKind) {
         if (!m_source.get()) {
             WebrtcMediaConstraints constraints;
+
+#if 1
             constraints.AddMandatory(webrtc::MediaConstraintsInterface::kEchoCancellation, true);
-            constraints.AddOptional(webrtc::MediaConstraintsInterface::kExperimentalEchoCancellation, true);
             constraints.AddMandatory(webrtc::MediaConstraintsInterface::kAutoGainControl, true);
             constraints.AddMandatory(webrtc::MediaConstraintsInterface::kNoiseSuppression, true);
-            constraints.AddOptional(webrtc::MediaConstraintsInterface::kExperimentalNoiseSuppression, true);
             constraints.AddOptional(webrtc::MediaConstraintsInterface::kHighpassFilter, true);
+#else
+            MediaTrackConstraintSet::iterator iter = m_constraints.mandatory.begin();
+            for (; iter != m_constraints.mandatory.end(); iter ++) {
+                bool bval = iter->second == "true" ? true : false;
+                constraints.AddMandatory(iter->first, bval);
+            }
+            
+            sequence<MediaTrackConstraint>::iterator iter2 = m_constraints.optional.begin();
+            for (; iter2 != m_constraints.optional.end(); iter2 ++) {
+                bool bval = iter2->second == "true" ? true : false;
+                constraints.AddOptional(iter2->first, bval);
+            }
+#endif
+            
             m_source = pc_factory->CreateAudioSource(&constraints);
         }
         m_track = pc_factory->CreateAudioTrack(label, (webrtc::AudioSourceInterface *)(m_source.get()));
@@ -103,7 +117,7 @@ bool Init(
     return (m_track != NULL);
 }
 
-explicit CMediaStreamTrack(MediaTrackConstraints *constraints)
+explicit CMediaStreamTrack(const MediaTrackConstraints *constraints)
 {
     if (constraints) {
         m_constraints.mandatory = constraints->mandatory;
@@ -297,7 +311,7 @@ sequence<SourceInfo> & AudioStreamTrack::getSourceInfos() {
 ubase::zeroptr<MediaStreamTrack> CreateMediaStreamTrack(
         media_t mtype,
         const std::string label,
-        MediaTrackConstraints *constraints,
+        const MediaTrackConstraints *constraints,
         talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory, 
         talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> ptrack)
 {

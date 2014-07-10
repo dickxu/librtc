@@ -109,7 +109,7 @@ virtual void SetSink(IRtcSink *sink) {
     m_sink = sink;
 }
 
-virtual long GetUserMedia(bool has_audio, bool has_video) {
+virtual long GetUserMedia(media_constraints_t media_constraints) {
     talk_base::Thread *worker_thread = talk_base::Thread::Current();
     talk_base::Thread *signal_thread = talk_base::Thread::Current(); 
     talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory = NULL;
@@ -118,8 +118,8 @@ virtual long GetUserMedia(bool has_audio, bool has_video) {
     returnv_assert (pc_factory.get(), UBASE_E_FAIL);
 
     xrtc::MediaStreamConstraints constraints;
-    constraints.audio = has_audio;
-    constraints.video = has_video;
+    constraints.audio = media_constraints.has_audio;
+    constraints.video = media_constraints.has_video;
     xrtc::GetUserMedia(constraints, (xrtc::NavigatorUserMediaCallback *)this, pc_factory);
     return UBASE_S_OK;
 }

@@ -36,7 +36,7 @@ ubase::zeroptr<MediaStream> CreateMediaStream(
 ubase::zeroptr<MediaStreamTrack> CreateMediaStreamTrack(
         media_t mtype,
         const std::string label,
-        MediaTrackConstraints *constraints,
+        const MediaTrackConstraints *constraints,
         talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory, 
         talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> ptrack);
 

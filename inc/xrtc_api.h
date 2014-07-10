@@ -61,6 +61,13 @@ enum rotation_t{
   ROTATION_270 = 270
 };
 
+// range for any type
+template <class T> struct range_t {
+    T min;
+    T max;
+};
+
+// video frame callback from xrtc
 typedef struct _video_frame {
     int width;
     int height;
@@ -72,12 +79,53 @@ typedef struct _video_frame {
     unsigned char *data;
 }video_frame_t;
 
+// for ice servers: stun and turn server
 typedef struct _ice_server {
     std::string uri;
     std::string username;
     std::string password;
 }ice_server_t;
 typedef std::vector<ice_server_t> ice_servers_t;
+
+// for one constraint of audio or video
+template <class T>
+struct constraint_t {
+    constraint_t() : valid(false), optional(true) {}
+    bool valid;     // default the constraint is invald, and will not been used
+    bool optional;  // defallt the constraint is optional, mandatory if false
+    T val;
+};
+
+// for audio constraints
+typedef struct _audio_constraints {
+    constraint_t<bool> aec;
+    constraint_t<bool> aec2;
+    constraint_t<bool> agc;
+    constraint_t<bool> agc2;
+    constraint_t<bool> ns;
+    constraint_t<bool> ns2;
+    constraint_t<bool> highPassFilter;
+    constraint_t<bool> typingNosieDetection;
+}audio_constraints_t;
+
+// for video constraints
+typedef struct _video_constraints {
+    constraint_t<range_t<std::string> > aspectRatio;
+    constraint_t<range_t<int> > width;
+    constraint_t<range_t<int> > height;
+    constraint_t<range_t<int> > frameRate;
+    constraint_t<bool> noiseReduction;
+    constraint_t<bool> leakyBucket;
+    constraint_t<bool> temporalLayeredScreencast;
+}video_constraints_t;
+
+// for audio & video constraints in getusermedia
+typedef struct _media_constraints {
+    bool has_audio;
+    audio_constraints_t audio;
+    bool has_video;
+    video_constraints_t video;
+}media_constraints_t;
 
 
 #if defined(OBJC) // For OBJC intefaces
@@ -184,10 +232,9 @@ public:
     virtual void SetSink(IRtcSink *sink) = 0;
 
     // To get local stream of audio & video, SUCCESS or fail by IRtcSink::OnGetUserMedia()
-    // @param has_audio: [in] open local audio
-    // @param has_video: [in] open local video
+    // @param constraints: [in] refer to media_constraints_t
     // @return 0 if OK, else fail
-    virtual long GetUserMedia(bool has_audio, bool has_video) = 0;
+    virtual long GetUserMedia(media_constraints_t constraints) = 0;
 
     // To create peer conncetion
     // @return 0 if OK, else fail
