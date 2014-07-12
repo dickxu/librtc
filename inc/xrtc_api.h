@@ -32,11 +32,22 @@
 #import <Foundation/Foundation.h>
 #endif
 
+
 // action of remote stream
 enum action_t {
-    ADD_ACTION,
-    REMOVE_ACTION,
+    kAddStream,
+    kRemoveStream,
 };
+
+
+//>
+// for ice servers: stun and turn server
+typedef struct _ice_server {
+    std::string uri;
+    std::string username;
+    std::string password;
+}ice_server_t;
+typedef std::vector<ice_server_t> ice_servers_t;
 
 // state of ice connection
 enum ice_conn_state_t {
@@ -49,6 +60,8 @@ enum ice_conn_state_t {
     kIceConnClosed,
 };
 
+
+//>
 // colorspace of video frame 
 enum color_t {
     kUnknownFmt = 0,
@@ -59,16 +72,10 @@ enum color_t {
 
 // rotation degree of video frame
 enum rotation_t{
-    kRotation_0 = 0,
-    kRotation_90 = 90,
-    kRotation_180 = 180,
-    kRotation_270 = 270
-};
-
-// range for any type
-template <class T> struct range_t {
-    T min;
-    T max;
+    kRotation_0     = 0,
+    kRotation_90    = 90,
+    kRotation_180   = 180,
+    kRotation_270   = 270
 };
 
 // video frame callback from xrtc
@@ -83,14 +90,26 @@ typedef struct _video_frame {
     unsigned char *data;
 }video_frame_t;
 
-// for ice servers: stun and turn server
-typedef struct _ice_server {
-    std::string uri;
-    std::string username;
-    std::string password;
-}ice_server_t;
-typedef std::vector<ice_server_t> ice_servers_t;
 
+//>
+// for device's type
+enum device_kind_t {
+    kDeviceNone,            //"none",
+    kVideoCapture,          //"camera",
+    kAudioIn,               //"microphone"
+    kAudioOut,              //"speaker"
+};
+
+// for device info
+struct device_t {
+    std::string did;        //device id
+    int kind;               //refer to device_kind_t
+    std::string name;       //readable name of device
+};
+typedef std::vector<device_t> devices_t;
+
+
+//>
 // for one constraint of audio or video
 template <class T>
 struct constraint_t {
@@ -98,6 +117,12 @@ struct constraint_t {
     bool valid;     // default the constraint is invald, and will not been used
     bool optional;  // defallt the constraint is optional, mandatory if false
     T val;
+};
+
+// range for any type
+template <class T> struct range_t {
+    T min;
+    T max;
 };
 
 // for audio constraints
@@ -131,28 +156,12 @@ typedef struct _media_constraints {
     video_constraints_t video;
 }media_constraints_t;
 
-// for device's type
-enum device_kind_t {
-    kDeviceNone,            //"none",
-    kVideoCapture,          //"camera",
-    kAudioIn,               //"microphone"
-    kAudioOut,              //"speaker"
-};
 
-// for device info
-struct device_t {
-    std::string did;        //device id
-    int kind;               //refer to device_kind_t
-    std::string name;       //readable name of device
-};
-typedef std::vector<device_t> devices_t;
-
-
-#if defined(OBJC) // For OBJC intefaces
 //>
 // The interface of video render:
 //  OnSize called when resolution changes.
 //  OnFrame called when having decoded data.
+#if defined(OBJC) // For OBJC intefaces
 @protocol IRtcRender
 
 @required
@@ -164,9 +173,22 @@ typedef std::vector<device_t> devices_t;
 @end
 typedef NSObject<IRtcRender> IRtcRender;
 
+#else
+
+class IRtcRender {
+public:
+    virtual ~IRtcRender() {}
+
+    virtual void OnSize(int width, int height) = 0;
+    virtual void OnFrame(const video_frame_t *frame) = 0;
+};
+
+#endif // OBJC
+
 
 //>
 // For receving notification from IRtcCenter
+#if defined(OBJC) // For OBJC intefaces
 @protocol IRtcSink
 
 // Return media sdp of local a/v, which should be sent to remote peer
@@ -207,20 +229,6 @@ typedef NSObject<IRtcSink> IRtcSink;
 
 #else
 
-//>
-// The interface of video render:
-//  OnSize called when resolution changes.
-//  OnFrame called when having decoded data.
-class IRtcRender {
-public:
-    virtual ~IRtcRender() {}
-
-    virtual void OnSize(int width, int height) = 0;
-    virtual void OnFrame(const video_frame_t *frame) = 0;
-};
-
-//>
-// For receving notification from IRtcCenter
 class IRtcSink {
 public:
     virtual ~IRtcSink() {}
@@ -324,6 +332,9 @@ public:
     virtual long AddIceCandidate(const std::string &candidate) = 0;
 };
 
+
+//>
+// For C-style interfaces
 extern "C" {
 bool        xrtc_init();
 void        xrtc_uninit();

@@ -22,6 +22,14 @@ public:
         return *this;
     }
 
+    WebrtcMediaConstraints & operator = (const WebrtcMediaConstraints *constraints) {
+        if (constraints && this != constraints) {
+            this->mandatory_ = constraints->mandatory_;
+            this->optional_ = constraints->optional_;
+        }
+        return *this;
+    }
+
     virtual const Constraints& GetMandatory() const {
         return mandatory_;
     }

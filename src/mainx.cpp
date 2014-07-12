@@ -199,11 +199,11 @@ virtual long SetLocalRender(IRtcRender *render, int action) {
     returnv_assert (m_pc.get(), UBASE_E_INVALIDPTR);
 
     long lret = UBASE_E_FAIL;
-    if (action == ADD_ACTION) {
+    if (action == kAddStream) {
         returnv_assert (render, UBASE_E_INVALIDARG);
         m_local_render->SetRender(render);
         lret = AddRender(m_pc->getLocalStreams(), m_local_render);
-    }else if (action == REMOVE_ACTION){
+    }else if (action == kRemoveStream){
         lret = RemoveRender(m_pc->getLocalStreams(), m_local_render);
         m_local_render->SetRender(NULL);
     }
@@ -222,11 +222,11 @@ virtual long SetRemoteRender(IRtcRender *render, int action) {
     returnv_assert (m_pc.get(), UBASE_E_INVALIDPTR);
 
     long lret = UBASE_E_FAIL;
-    if (action == ADD_ACTION) {
+    if (action == kAddStream) {
         returnv_assert (render, UBASE_E_INVALIDARG);
         m_remote_render->SetRender(render);
         lret = AddRender(m_pc->getRemoteStreams(), m_remote_render);
-    }else if (action == REMOVE_ACTION){
+    }else if (action == kRemoveStream){
         lret = RemoveRender(m_pc->getRemoteStreams(), m_remote_render);
         m_remote_render->SetRender(NULL);
     }
@@ -314,18 +314,18 @@ virtual void onaddstream(xrtc::MediaStreamPtr stream) { // remote stream
     return_assert(m_pc.get());
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnRemoteStream:ADD_ACTION];
+    [m_sink OnRemoteStream:kAddStream];
 #else
-    m_sink->OnRemoteStream(ADD_ACTION);
+    m_sink->OnRemoteStream(kAddStream);
 #endif
 }
 virtual void onremovestream(xrtc::MediaStreamPtr stream) {
     return_assert(m_pc.get());
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnRemoteStream:REMOVE_ACTION];
+    [m_sink OnRemoteStream:kRemoveStream];
 #else
-    m_sink->OnRemoteStream(REMOVE_ACTION);
+    m_sink->OnRemoteStream(kRemoveStream);
 #endif
 }
 virtual void oniceconnectionstatechange(int state)  {
