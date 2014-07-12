@@ -16,8 +16,11 @@
 #include "talk/app/webrtc/peerconnectioninterface.h"
 
 #include "xrtc_std.h"
+#include "xrtc_api.h"
 
 namespace xrtc {
+
+bool GetDevices(const device_kind_t kind,  devices_t & devices);
 
 void GetUserMedia(
         const MediaStreamConstraints & constraints, 

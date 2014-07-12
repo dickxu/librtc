@@ -32,33 +32,37 @@
 #import <Foundation/Foundation.h>
 #endif
 
+// action of remote stream
 enum action_t {
     ADD_ACTION,
     REMOVE_ACTION,
 };
 
-enum ice_state_t {
-    kIceNew,
-    kIceChecking,
-    kIceConnected,
-    kIceCompleted,
-    kIceFailed,
-    kIceDisconnected,
-    kIceClosed,
+// state of ice connection
+enum ice_conn_state_t {
+    kIceConnNew,
+    kIceConnChecking,
+    kIceConnConnected,
+    kIceConnCompleted,
+    kIceConnFailed,
+    kIceConnDisconnected,
+    kIceConnClosed,
 };
 
+// colorspace of video frame 
 enum color_t {
-    UnknownFmt = 0,
-    I420Fmt,
-    RGB24Fmt,
-    ARGB32Fmt,
+    kUnknownFmt = 0,
+    kI420Fmt,
+    kRGB24Fmt,
+    kARGB32Fmt,
 };
 
+// rotation degree of video frame
 enum rotation_t{
-  ROTATION_0 = 0,
-  ROTATION_90 = 90,
-  ROTATION_180 = 180,
-  ROTATION_270 = 270
+    kRotation_0 = 0,
+    kRotation_90 = 90,
+    kRotation_180 = 180,
+    kRotation_270 = 270
 };
 
 // range for any type
@@ -127,6 +131,22 @@ typedef struct _media_constraints {
     video_constraints_t video;
 }media_constraints_t;
 
+// for device's type
+enum device_kind_t {
+    kDeviceNone,            //"none",
+    kVideoCapture,          //"camera",
+    kAudioIn,               //"microphone"
+    kAudioOut,              //"speaker"
+};
+
+// for device info
+struct device_t {
+    std::string did;        //device id
+    int kind;               //refer to device_kind_t
+    std::string name;       //readable name of device
+};
+typedef std::vector<device_t> devices_t;
+
 
 #if defined(OBJC) // For OBJC intefaces
 //>
@@ -169,12 +189,18 @@ typedef NSObject<IRtcRender> IRtcRender;
 - (void) OnGetUserMedia:(int)error errstr:(std::string)str;
 
 // This callback for ICE connection state
-// @param state: refer to ice_state_t
+// @param state: refer to ice_conn_state_t
 @required
 - (void) OnIceConnectionState:(int)state;
 
+// This callback will be activated when error happens in webrtc(session)
+// @param message: failure message about internel errors
 @required
-- (void) OnFailureMesssage:(std::string)str;
+- (void) OnFailure:(std::string) message;
+
+// This callback will be activated when error happens in peer connection
+@required
+- (void) OnError;
 
 @end
 typedef NSObject<IRtcSink> IRtcSink;
@@ -215,10 +241,15 @@ public:
     virtual void OnGetUserMedia(int error, std::string errstr) = 0;
 
     // This callback for ICE connection state
-    // @param state: refer to ice_state_t
+    // @param state: refer to ice_conn_state_t
     virtual void OnIceConnectionState(int state) = 0;
 
-    virtual void OnFailureMesssage(std::string errstr) = 0;
+    // This callback will be activated when error happens in webrtc(session)
+    // @param message: failure message about internel errors
+    virtual void OnFailure(std::string message) = 0;
+
+    // This callback will be activated when error happens in peer connection
+    virtual void OnError() = 0;
 };
 
 #endif // OBJC
@@ -231,15 +262,24 @@ public:
     virtual ~IRtcCenter() {}
     virtual void SetSink(IRtcSink *sink) = 0;
 
+    // To get system audio/video devices
+    // @param devices: [in] refer to device_kind_t
+    // @param devices: [out] refer to devices_t
+    virtual void GetDevices(const device_kind_t kind, devices_t & devices) = 0;
+
     // To get local stream of audio & video, SUCCESS or fail by IRtcSink::OnGetUserMedia()
     // @param constraints: [in] refer to media_constraints_t
     // @return 0 if OK, else fail
-    virtual long GetUserMedia(media_constraints_t constraints) = 0;
+    virtual long GetUserMedia(const media_constraints_t & constraints) = 0;
 
-    // To create peer conncetion
+    // To create peer conncetion, default with google stun server
     // @return 0 if OK, else fail
     virtual long CreatePeerConnection() = 0;
-    virtual long CreatePeerConnection(ice_servers_t servers) = 0;
+
+    // To create peer conncetion
+    // #param servers: [in] refer to ice_servers_t, stun/turn server
+    // @return 0 if OK, else fail
+    virtual long CreatePeerConnection(const ice_servers_t & servers) = 0;
 
     // To add local stream (got by GetUserMedia) into peer connection(got by CreatePeerConnection)
     // @return 0 if OK, else fail

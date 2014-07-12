@@ -93,4 +93,35 @@ bool Convert2ICE(const std::string &json, webrtc::IceCandidateInterface * &candi
     return true;
 }
     
+bool GetDevices(const device_kind_t kind,  devices_t & devices) {
+    talk_base::scoped_ptr<cricket::DeviceManagerInterface> dev_manager(
+            cricket::DeviceManagerFactory::Create());
+    if (!dev_manager->Init()) {
+        return false;
+    }
+
+    std::vector<cricket::Device> devs;
+    if (kind == kVideoCapture) {
+        dev_manager->GetVideoCaptureDevices(&devs);
+    }else if (kind == kAudioIn) {
+        dev_manager->GetAudioInputDevices(&devs);
+    }else if (kind == kAudioOut) {
+        dev_manager->GetAudioOutputDevices(&devs);
+    }else {
+        return false;
+    }
+
+    device_t dev;
+    dev.kind = kind;
+    std::vector<cricket::Device>::iterator iter;
+    for (iter=devs.begin(); iter != devs.end(); ++iter) {
+        dev.did = (*iter).id;
+        dev.name = (*iter).name;
+        devices.push_back(dev);
+    }
+    devs.clear();
+
+    return true;
 }
+
+} //namespace xrtc

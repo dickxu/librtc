@@ -1,7 +1,4 @@
-#include "xrtc_api.h"
-#include "xrtc_std.h"
 #include "webrtc.h"
-#include "xrtc_common.h"
 #include "ubase/error.h"
 
 class WebrtcRender : public webrtc::VideoRendererInterface {
@@ -35,7 +32,7 @@ virtual void SetSize(int width, int height) {
     if (m_frame.data == NULL) {
         m_frame.size = width * height * 4;
         m_frame.data = new unsigned char[m_frame.size];
-        m_frame.color = ARGB32Fmt;
+        m_frame.color = kARGB32Fmt;
     }
 #if defined(OBJC)
     [m_render OnSize:width height:height];
@@ -93,6 +90,7 @@ CRtcCenter() {
     m_pc_factory = NULL;
     m_pc = NULL;
     m_local_stream = NULL;
+
     m_sink = NULL;
     m_local_render = NULL;
     m_remote_render = NULL;       
@@ -109,7 +107,13 @@ virtual void SetSink(IRtcSink *sink) {
     m_sink = sink;
 }
 
-virtual long GetUserMedia(media_constraints_t media_constraints) {
+virtual void GetDevices(const device_kind_t kind, devices_t & devices)
+{
+    devices.clear();
+    xrtc::GetDevices(kind, devices);
+}
+
+virtual long GetUserMedia(const media_constraints_t & media_constraints) {
     talk_base::Thread *worker_thread = talk_base::Thread::Current();
     talk_base::Thread *signal_thread = talk_base::Thread::Current(); 
     talk_base::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory = NULL;
@@ -133,13 +137,13 @@ virtual long CreatePeerConnection() {
     return CreatePeerConnection(servers);
 }
 
-virtual long CreatePeerConnection(ice_servers_t ice_servers) {
+virtual long CreatePeerConnection(const ice_servers_t & ice_servers) {
     m_pc_factory = webrtc::CreatePeerConnectionFactory();
     returnv_assert (m_pc_factory.get(), UBASE_E_FAIL);
 
     webrtc::PeerConnectionInterface::IceServers servers;
 
-    ice_servers_t::iterator iter;
+    ice_servers_t::const_iterator iter;
     for (iter = ice_servers.begin(); iter != ice_servers.end(); iter++) {
         webrtc::PeerConnectionInterface::IceServer server;
         server.uri = iter->uri;
@@ -343,18 +347,18 @@ virtual void onsuccess(const xrtc::DOMString &sdp) {
 virtual void onfailure(const xrtc::DOMString &error) {
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnFailureMesssage: "onfailure: " + error];
+    [m_sink OnFailure:error];
 #else
-    m_sink->OnFailureMesssage("onfailure: " + error);
+    m_sink->OnFailure(error);
 #endif
 
 }
 virtual void onerror() {
     return_assert(m_sink);
 #if defined(OBJC)
-    [m_sink OnFailureMesssage: "onerror: "];
+    [m_sink OnError];
 #else
-    m_sink->OnFailureMesssage("onerror: ");
+    m_sink->OnError();
 #endif
 
 }

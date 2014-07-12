@@ -41,7 +41,6 @@ typedef std::string DOMString;
 
 //
 // For capability and constraint
-typedef sequence<DOMString> CapabilityList;
 typedef std::map<DOMString, DOMString> MediaTrackConstraintSet;
 typedef std::pair<DOMString, DOMString> MediaTrackConstraint;
 typedef std::map<DOMString, DOMString> MediaConstraints;
@@ -104,62 +103,6 @@ enum MediaStreamTrackState {
     TRACK_NEW,            //"new",
     TRACK_LIVE,           //"live",
     TRACK_ENDED,          //"ended"
-};
-
-enum VideoFacingModeEnum {
-    FACING_USER,           //"user",
-    FACING_ENVIRONMENT,    //"environment",
-    FACING_LEFT,           //"left",
-    FACING_RIGHT,          //"right"
-};
-
-enum SourceTypeEnum {
-    SOURCE_NONE,           //"none",
-    SOURCE_CAMERA,         //"camera",
-    SOURCE_MICROPHONE,     //"microphone"
-};
-
-struct SourceInfo {
-    DOMString sourceId;
-    DOMString kind;
-    DOMString label;
-};
-
-//
-// for a/v media information
-struct MediaSourceStates {
-    SourceTypeEnum      sourceType;
-    DOMString           sourceId;
-    unsigned long       width;
-    unsigned long       height;
-    float               frameRate;
-    float               aspectRatio;
-    VideoFacingModeEnum facingMode;
-    unsigned long       volume;
-};
-
-struct CapabilityRange {
-    float     max;
-    float     min;
-    boolean supported;
-};
-
-struct AllMediaCapabilities{
-    DOMString mediaType; // "none", "audio", "video", or "text"
-};
-
-struct AllVideoCapabilities : public AllMediaCapabilities {
-    CapabilityList  sourceType;
-    CapabilityList  sourceId;
-    CapabilityRange width;
-    CapabilityRange height;
-    CapabilityRange frameRate;
-    CapabilityRange aspectRatio;
-    CapabilityList  facingMode;
-};
-
-struct AllAudioCapabilities : public AllMediaCapabilities {
-    CapabilityRange volume;
 };
 
 

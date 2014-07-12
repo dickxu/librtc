@@ -76,8 +76,6 @@ public:
     virtual ~MediaStreamTrack() {}
 
     virtual MediaTrackConstraints   constraints ()      = 0;
-    virtual MediaSourceStates       states ()           = 0;
-    virtual AllMediaCapabilities *  capabilities ()     = 0;
     virtual void                    applyConstraints (MediaTrackConstraints &constraints) {}
     //virtual MediaStreamTrack        clone () {}
     virtual void                    stop () {}
@@ -87,12 +85,10 @@ typedef ubase::zeroptr<MediaStreamTrack> MediaStreamTrackPtr;
 
 class VideoStreamTrack : public MediaStreamTrack {
 public:
-    static sequence<SourceInfo> & getSourceInfos();
 };
 
 class AudioStreamTrack : public MediaStreamTrack {
 public:
-    static sequence<SourceInfo> & getSourceInfos();
 };
 
 

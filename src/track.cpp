@@ -29,17 +29,12 @@
 
 namespace xrtc {
 
-static sequence<SourceInfo> _audio_sources;
-static sequence<SourceInfo> _video_sources;
-
 class CMediaStreamTrack : public MediaStreamTrack {
 private:
     talk_base::scoped_refptr<webrtc::MediaStreamTrackInterface> m_track;
     talk_base::scoped_refptr<webrtc::MediaSourceInterface> m_source;
 
     MediaTrackConstraints m_constraints;
-    MediaSourceStates m_source_states;
-    AllMediaCapabilities *m_capabilities;
 
 public:
 bool Init(
@@ -91,13 +86,7 @@ bool Init(
             for (iter=m_constraints.optional.begin(); iter != m_constraints.optional.end(); iter++) {
                 if (iter->first != "sourceId") 
                     continue;
-                sequence<SourceInfo>::iterator iter2;
-                for (iter2=_video_sources.begin(); iter2 != _video_sources.end(); iter2++) {
-                    if (iter2->sourceId == iter->second) {
-                        vname = iter2->label;
-                        break;
-                    }
-                }
+                vname = iter->second; //FIXME: maybe using device_t
                 break;
             }
 
@@ -188,16 +177,6 @@ MediaTrackConstraints constraints()
     return m_constraints;
 }
 
-MediaSourceStates states()
-{
-    return m_source_states;
-}
-
-AllMediaCapabilities * capabilities()
-{
-    return m_capabilities;
-}
-
 void applyConstraints(MediaTrackConstraints &constraints)
 {
     m_constraints = constraints;
@@ -263,49 +242,6 @@ static cricket::VideoCapturer* OpenVideoCaptureDevice(std::string vid)
 }
 
 }; //class CMediaStreamTrack
-
-
-static bool GetSourceInfos(const std::string kind, sequence<SourceInfo> &sources) {
-    talk_base::scoped_ptr<cricket::DeviceManagerInterface> dev_manager(
-            cricket::DeviceManagerFactory::Create());
-    if (!dev_manager->Init()) {
-        return false;
-    }
-
-    std::vector<cricket::Device> devs;
-    if (kind == kVideoKind) {
-        dev_manager->GetVideoCaptureDevices(&devs);
-    }else if (kind == kAudioKind) {
-        // dev_manager->GetAudioOutputDevices(&devs);
-        dev_manager->GetAudioInputDevices(&devs);
-    }else {
-        return false;
-    }
-
-    SourceInfo source;
-    source.kind = kind;
-    std::vector<cricket::Device>::iterator iter;
-    for (iter=devs.begin(); iter != devs.end(); ++iter) {
-        source.sourceId = (*iter).id;
-        source.label = (*iter).name;
-        sources.push_back(source);
-    }
-    devs.clear();
-
-    return true;
-}
-
-sequence<SourceInfo> & VideoStreamTrack::getSourceInfos() {
-    _video_sources.clear();
-    GetSourceInfos(kVideoKind, _video_sources);
-    return _video_sources;
-}
-
-sequence<SourceInfo> & AudioStreamTrack::getSourceInfos() {
-    _audio_sources.clear();
-    GetSourceInfos(kAudioKind, _audio_sources);
-    return _audio_sources;
-}
 
 
 ubase::zeroptr<MediaStreamTrack> CreateMediaStreamTrack(
