@@ -1,6 +1,6 @@
 # CMAKE_C_FLAGS CMAKE_CXX_FLAGS
 add_definitions(-O2 -Wall
-    -DHAS_ATOMICS
+    -D__GUNC__
     -DHAVE_PTHREAD_H
 )
 
