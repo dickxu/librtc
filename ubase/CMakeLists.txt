@@ -1,6 +1,5 @@
 # CMAKE_C_FLAGS CMAKE_CXX_FLAGS
 add_definitions(-O2 -Wall
-    -D__GUNC__
     -DHAVE_PTHREAD_H
 )
 

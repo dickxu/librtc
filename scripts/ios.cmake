@@ -1,4 +1,5 @@
 add_definitions(
+    -DHAS_ATOMICS
     -fno-rtti
     -DPOSIX
     -DIOS

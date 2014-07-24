@@ -1,4 +1,5 @@
 add_definitions(
+    -D__GUNC__
     -fno-rtti
     -DPOSIX
     -DOSX
