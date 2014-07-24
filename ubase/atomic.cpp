@@ -10,9 +10,9 @@ namespace atomic
 {
     void memfence() 
     {
-#if HAS_ATOMICS == 0
+#if defined(HAS_ATOMICS)
        return;
-#  warning HAS_ATOMICS == 0, no memory fency operations for your platform!
+#  warning HAS_ATOMICS, no memory fency operations for your platform!
 #elif defined(__GNUC__)
         __sync_synchronize();
 #elif defined(WIN32)
@@ -24,7 +24,7 @@ namespace atomic
 
     cas_t cmpandswap(volatile cas_t* ptr, cas_t new_val, cas_t old_val) 
     {
-#if HAS_ATOMICS == 0
+#if defined(HAS_ATOMICS)
         cas_t result = *ptr;
         if (result == old_val)
             *ptr = new_val;
@@ -40,7 +40,7 @@ namespace atomic
 
     cas_t inc(volatile cas_t* ptr) 
     {
-#if HAS_ATOMICS == 0
+#if defined(HAS_ATOMICS)
         ++(*ptr);
         return *ptr;
 #elif defined(__GNUC__)
@@ -54,7 +54,7 @@ namespace atomic
 
     cas_t dec(volatile cas_t* ptr) 
     {
-#if HAS_ATOMICS == 0
+#if defined(HAS_ATOMICS)
         --(*ptr);
         return *ptr;
 #elif defined(__GNUC__)
@@ -68,7 +68,7 @@ namespace atomic
 
     cas_t add(volatile cas_t* ptr, cas_t val) 
     {
-#if HAS_ATOMICS == 0
+#if defined(HAS_ATOMICS)
         *ptr += val;
         return *ptr;
 #elif defined(__GNUC__)
