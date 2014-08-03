@@ -121,10 +121,7 @@ virtual long GetUserMedia(const media_constraints_t & media_constraints) {
     pc_factory = webrtc::CreatePeerConnectionFactory(worker_thread, signal_thread, NULL, NULL, NULL);
     returnv_assert (pc_factory.get(), UBASE_E_FAIL);
 
-    xrtc::MediaStreamConstraints constraints;
-    constraints.audio = media_constraints.has_audio;
-    constraints.video = media_constraints.has_video;
-    xrtc::GetUserMedia(constraints, (xrtc::NavigatorUserMediaCallback *)this, pc_factory);
+    xrtc::GetUserMedia(media_constraints, (xrtc::NavigatorUserMediaCallback *)this, pc_factory);
     return UBASE_S_OK;
 }
 

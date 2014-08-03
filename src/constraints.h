@@ -39,6 +39,14 @@ public:
     }
 
     template <class T>
+    void AddItem(const std::string& key, const T& value, bool optional) {
+        if (optional)
+            optional_.push_back(Constraint(key, talk_base::ToString<T>(value)));
+        else
+            mandatory_.push_back(Constraint(key, talk_base::ToString<T>(value)));
+    }
+    
+    template <class T>
     void AddMandatory(const std::string& key, const T& value) {
         mandatory_.push_back(Constraint(key, talk_base::ToString<T>(value)));
     }

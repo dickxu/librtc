@@ -56,38 +56,28 @@ bool Init(
     if (kind == kAudioKind) {
         if (!m_source.get()) {
             WebrtcMediaConstraints constraints;
-
-#if 1
-            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kEchoCancellation, true);
-            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kAutoGainControl, true);
-            constraints.AddMandatory(webrtc::MediaConstraintsInterface::kNoiseSuppression, true);
-            constraints.AddOptional(webrtc::MediaConstraintsInterface::kHighpassFilter, true);
-#else
-            MediaTrackConstraintSet::iterator iter = m_constraints.mandatory.begin();
-            for (; iter != m_constraints.mandatory.end(); iter ++) {
-                bool bval = iter->second == "true" ? true : false;
-                constraints.AddMandatory(iter->first, bval);
+            if (m_constraints.mtype == XRTC_AUDIO && m_constraints.ptr) {
+                audio_constraints_t *audio = (audio_constraints_t *)m_constraints.ptr;
+                if (audio->aec.valid)
+                    constraints.AddItem(webrtc::MediaConstraintsInterface::kEchoCancellation, audio->aec.val, audio->aec.optional);
+                if (audio->agc.valid)
+                    constraints.AddItem(webrtc::MediaConstraintsInterface::kAutoGainControl, audio->agc.val, audio->agc.optional);
+                if (audio->ns.valid)
+                    constraints.AddItem(webrtc::MediaConstraintsInterface::kNoiseSuppression, audio->ns.val, audio->ns.optional);
+                if (audio->highPassFilter.valid)
+                    constraints.AddItem(webrtc::MediaConstraintsInterface::kHighpassFilter, audio->highPassFilter.val, audio->highPassFilter.optional);
             }
-            
-            sequence<MediaTrackConstraint>::iterator iter2 = m_constraints.optional.begin();
-            for (; iter2 != m_constraints.optional.end(); iter2 ++) {
-                bool bval = iter2->second == "true" ? true : false;
-                constraints.AddOptional(iter2->first, bval);
-            }
-#endif
-            
             m_source = pc_factory->CreateAudioSource(&constraints);
         }
         m_track = pc_factory->CreateAudioTrack(label, (webrtc::AudioSourceInterface *)(m_source.get()));
     }else if (kind == kVideoKind) {
         if (!m_source.get()) {
             std::string vname = "";
-            sequence<MediaTrackConstraint>::iterator iter;
-            for (iter=m_constraints.optional.begin(); iter != m_constraints.optional.end(); iter++) {
-                if (iter->first != "sourceId") 
-                    continue;
-                vname = iter->second; //FIXME: maybe using device_t
-                break;
+            if (m_constraints.mtype == XRTC_VIDEO && m_constraints.ptr) {
+                video_constraints_t *video = (video_constraints_t *)m_constraints.ptr;
+                if (video && video->device.valid) {
+                    vname = video->device.val.did;
+                }
             }
 
             // if vname empty, select default device
@@ -109,8 +99,7 @@ bool Init(
 explicit CMediaStreamTrack(const MediaTrackConstraints *constraints)
 {
     if (constraints) {
-        m_constraints.mandatory = constraints->mandatory;
-        m_constraints.optional = constraints->optional;
+        m_constraints = *constraints;
     }
 }
 

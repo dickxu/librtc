@@ -42,11 +42,13 @@ void NavigatorUserMedia::getUserMedia (const MediaStreamConstraints & constraint
     return_assert(stream.get());
     
     // for audio track
-    if (constraints.audio) {
+    if (constraints.has_audio) {
         LOGD("get audio track and add it to stream");
         std::string alabel = kAudioLabel;
+        MediaTrackConstraints audio_constraints(constraints.audio);
+        
         ubase::zeroptr<MediaStreamTrack> audio_track =
-            CreateMediaStreamTrack(XRTC_AUDIO, alabel, &constraints.audioConstraints, _pc_factory, NULL);
+            CreateMediaStreamTrack(XRTC_AUDIO, alabel, &audio_constraints, _pc_factory, NULL);
         if (audio_track->getptr() == NULL) {
             LOGW("fail to get audio track")
             error.errstr = "no audio track";
@@ -57,11 +59,13 @@ void NavigatorUserMedia::getUserMedia (const MediaStreamConstraints & constraint
     }
 
     // for video track
-    if (constraints.video) {
+    if (constraints.has_video) {
         LOGD("get video track and add it to stream");
         std::string vlabel = kVideoLabel;
+        MediaTrackConstraints video_constraints(constraints.video);
+        
         ubase::zeroptr<MediaStreamTrack> video_track =
-            CreateMediaStreamTrack(XRTC_VIDEO, vlabel, &constraints.videoConstraints, _pc_factory, NULL);
+            CreateMediaStreamTrack(XRTC_VIDEO, vlabel, &video_constraints, _pc_factory, NULL);
         if (video_track->getptr() == NULL) {
             LOGW("fail to get video track")
             error.errstr = "no video track";

@@ -24,7 +24,7 @@ include(scripts/common.cmake)
 add_subdirectory(ubase)
 add_subdirectory(src)
 
-if (NOT ${IOS})
+if (BUILD_TESTS STREQUAL "yes")
 add_subdirectory(tests)
 endif()
 

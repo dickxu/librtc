@@ -176,15 +176,15 @@ pack_webrtc() {
     cd $local_root
     target=webrtc_all
     rm -f lib$target.a
-    excludes="testing\|unittest\|test\|Test\|protobuf_full_do_not_use"
+    excludes="testing\|unittest\|test\|Test\|protobuf_full_do_not_use\|bwe_tools_util"
     thelibs=`find . -depth 1 -name "lib*.a" -print | grep -v "$excludes"`
 
     if [ $TARGET = "MAC" ]; then
         # for dynamic lib
         ldflags="-framework CoreServices -framework CoreAudio -framework CoreVideo -framework QTKit -framework OpenGL -framework AudioToolbox -framework ApplicationServices -framework Foundation -framework AppKit -framework Security -framework IOKit -framework SystemConfiguration -lcrypto -lssl -lc -lstdc++"
-        make_so $target
-        check_err "fail to gen shared .so"
-        mkdir -p $LIBDIR && cp -f lib$target.so $LIBDIR
+        #make_so $target 2>/dev/null
+        #check_err "fail to gen shared .so"
+        #mkdir -p $LIBDIR && cp -f lib$target.so $LIBDIR
     fi
 
     # for static lib
@@ -234,7 +234,8 @@ build_xrtc() {
     pushd bld
     if [ $TARGET = "MAC" ]; then
         cmake -D MAC=1 -D CMAKE_BUILD_TYPE=$BUILD_TYPE -G Xcode ..
-        xcodebuild -target ubase_static -target rtc_static -target testrtc -configuration $BUILD_TYPE
+        #xcodebuild -target ubase_static -target rtc_static -target testrtc -configuration $BUILD_TYPE
+        xcodebuild -target ubase_static -target rtc_static -configuration $BUILD_TYPE
     elif [ $TARGET = "IOS" ]; then
         cmake -D TARGET=$TARGET -D IOS=1 -D CMAKE_BUILD_TYPE=$BUILD_TYPE -G Xcode ..
         xcodebuild -target ubase_static -target rtc_static -configuration $BUILD_TYPE

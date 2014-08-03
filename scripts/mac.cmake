@@ -8,6 +8,7 @@ add_definitions(
     -x objective-c++
 )
 
+set(BUILD_TESTS no)
 set(XCODE_ROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer")
 file (GLOB _XCODE_SDKS "${XCODE_ROOT}/SDKs/*")
 if (_XCODE_SDKS)
@@ -33,7 +34,7 @@ find_library(FWAPPKIT AppKit)
 find_library(FWSECURITY Security)
 find_library(FWIOKIT IOKit)
 
-find_library(LIBWEBRTC libwebrtc_all.a lib/out_mac/${CMAKE_BUILD_TYPE})
+find_library(LIBWEBRTC libwebrtc_all.a libs/out_mac/${CMAKE_BUILD_TYPE})
 
 set(all_libs
     ${LIBWEBRTC}

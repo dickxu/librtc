@@ -101,11 +101,22 @@ enum device_kind_t {
 };
 
 // for device info
-struct device_t {
-    std::string did;        //device id
+typedef struct _device {
     int kind;               //refer to device_kind_t
     std::string name;       //readable name of device
-};
+    std::string did;        //device id
+    
+    _device() : kind(kDeviceNone) {}
+    _device(const _device &other) { *this = other; }
+    _device(int kind, const std::string name, const std::string did) : kind(kind), name(name), did(did) {}
+    _device & operator = (const _device &other) {
+        if (this == &other) return *this;
+        this->kind = other.kind;
+        this->name = other.name;
+        this->did = other.did;
+        return *this;
+    }
+}device_t;
 typedef std::vector<device_t> devices_t;
 
 
@@ -113,16 +124,36 @@ typedef std::vector<device_t> devices_t;
 // for one constraint of audio or video
 template <class T>
 struct constraint_t {
-    constraint_t() : valid(false), optional(true) {}
+    T val;
     bool valid;     // default the constraint is invald, and will not been used
     bool optional;  // defallt the constraint is optional, mandatory if false
-    T val;
+    
+    constraint_t() : valid(false), optional(true) {}
+    constraint_t(const constraint_t &other) { *this = other; }
+    constraint_t(const T &val, bool mandatory=true) : val(val), valid(true), optional(!mandatory) {}
+    constraint_t & operator = (const constraint_t &other) {
+        if (this == &other) return *this;
+        this->val = other.val;
+        this->valid = other.valid;
+        this->optional = other.optional;
+        return *this;
+    }
 };
 
 // range for any type
 template <class T> struct range_t {
     T min;
     T max;
+    
+    range_t() {}
+    range_t(const range_t &other) { *this = other; }
+    range_t(const T &min, const T &max) : min(min), max(max) {}
+    range_t & operator = (const range_t &other) {
+        if (this == &other) return *this;
+        this->min = other.min;
+        this->max = other.max;
+        return *this;
+    }
 };
 
 // for audio constraints
@@ -135,10 +166,13 @@ typedef struct _audio_constraints {
     constraint_t<bool> ns2;
     constraint_t<bool> highPassFilter;
     constraint_t<bool> typingNosieDetection;
+    
+    explicit _audio_constraints() {}
 }audio_constraints_t;
 
 // for video constraints
 typedef struct _video_constraints {
+    constraint_t<device_t> device;
     constraint_t<range_t<std::string> > aspectRatio;
     constraint_t<range_t<int> > width;
     constraint_t<range_t<int> > height;
@@ -146,7 +180,10 @@ typedef struct _video_constraints {
     constraint_t<bool> noiseReduction;
     constraint_t<bool> leakyBucket;
     constraint_t<bool> temporalLayeredScreencast;
+    
+    explicit _video_constraints() {}
 }video_constraints_t;
+
 
 // for audio & video constraints in getusermedia
 typedef struct _media_constraints {
@@ -154,13 +191,13 @@ typedef struct _media_constraints {
     audio_constraints_t audio;
     bool has_video;
     video_constraints_t video;
+    
+    explicit _media_constraints() {}
 }media_constraints_t;
 
 
 //>
-// The interface of video render:
-//  OnSize called when resolution changes.
-//  OnFrame called when having decoded data.
+// The interface of video render
 #if defined(OBJC) // For OBJC intefaces
 @protocol IRtcRender
 
@@ -179,7 +216,13 @@ class IRtcRender {
 public:
     virtual ~IRtcRender() {}
 
+    // Called when resolution of decoded frame changes.
+    // @param width: width of decoded frame
+    // @param height: height of decoded frame
     virtual void OnSize(int width, int height) = 0;
+
+    // Called when having decoded frame.
+    // @param frame: refer to video_frame_t, return decoded frame
     virtual void OnFrame(const video_frame_t *frame) = 0;
 };
 
@@ -191,36 +234,24 @@ public:
 #if defined(OBJC) // For OBJC intefaces
 @protocol IRtcSink
 
-// Return media sdp of local a/v, which should be sent to remote peer
 @required
 - (void) OnSessionDescription:(const std::string &)sdp;
 
-// Return ice candidate of current peer connection, which should be sent to remote peer
 @required
 - (void) OnIceCandidate:(const std::string &)candidate;
 
-// Notify the status of remote stream(ADD or REMOVE)
-// @param action: refer to action_t
 @required
 - (void) OnRemoteStream:(int)action;
 
-// This callback will be activated when IRtcCenter::GetUserMedia()
-// @param error: 0 if OK, else fail
-// @param errstr: error message
 @required
 - (void) OnGetUserMedia:(int)error errstr:(std::string)str;
 
-// This callback for ICE connection state
-// @param state: refer to ice_conn_state_t
 @required
 - (void) OnIceConnectionState:(int)state;
 
-// This callback will be activated when error happens in webrtc(session)
-// @param message: failure message about internel errors
 @required
 - (void) OnFailure:(std::string) message;
 
-// This callback will be activated when error happens in peer connection
 @required
 - (void) OnError;
 
@@ -234,26 +265,28 @@ public:
     virtual ~IRtcSink() {}
 
     // Return media sdp of local a/v, which should be sent to remote peer
+    // @param sdp: [out] sdp of local a/v (json format)
     virtual void OnSessionDescription(const std::string &sdp) = 0;
 
     // Return ice candidate of current peer connection, which should be sent to remote peer
+    // @param candidate: [out] ice candidate (json format)
     virtual void OnIceCandidate(const std::string &candidate) = 0;
 
     // Notify the status of remote stream(ADD or REMOVE)
-    // @param action: refer to action_t
+    // @param action: [out] status of remote stream, refer to action_t
     virtual void OnRemoteStream(int action) = 0;
 
     // This callback will be activated when IRtcCenter::GetUserMedia()
-    // @param error: 0 if OK, else fail
-    // @param errstr: error message
+    // @param error: [out] 0 if OK, else fail
+    // @param errstr: [out] error message
     virtual void OnGetUserMedia(int error, std::string errstr) = 0;
 
     // This callback for ICE connection state
-    // @param state: refer to ice_conn_state_t
+    // @param state: [out] state of ice connection, refer to ice_conn_state_t
     virtual void OnIceConnectionState(int state) = 0;
 
     // This callback will be activated when error happens in webrtc(session)
-    // @param message: failure message about internel errors
+    // @param message: [out] failure message of internel errors
     virtual void OnFailure(std::string message) = 0;
 
     // This callback will be activated when error happens in peer connection
@@ -268,15 +301,18 @@ public:
 class IRtcCenter {
 public:
     virtual ~IRtcCenter() {}
+
+    // To set sink of IRtcCenter for receiving the status of RTC
+    // @param sink: [in] object of sink
     virtual void SetSink(IRtcSink *sink) = 0;
 
     // To get system audio/video devices
-    // @param devices: [in] refer to device_kind_t
-    // @param devices: [out] refer to devices_t
+    // @param devices: [in] device kind(audio/video), refer to device_kind_t
+    // @param devices: [out] system devices, refer to devices_t
     virtual void GetDevices(const device_kind_t kind, devices_t & devices) = 0;
 
-    // To get local stream of audio & video, SUCCESS or fail by IRtcSink::OnGetUserMedia()
-    // @param constraints: [in] refer to media_constraints_t
+    // To get local stream of audio & video, SUCCESS or fail indicated by IRtcSink::OnGetUserMedia()
+    // @param constraints: [in] media constrainsts(audio/video), refer to media_constraints_t
     // @return 0 if OK, else fail
     virtual long GetUserMedia(const media_constraints_t & constraints) = 0;
 
@@ -285,23 +321,24 @@ public:
     virtual long CreatePeerConnection() = 0;
 
     // To create peer conncetion
-    // #param servers: [in] refer to ice_servers_t, stun/turn server
+    // @param servers: [in] stun/turn server list, refer to ice_servers_t
     // @return 0 if OK, else fail
     virtual long CreatePeerConnection(const ice_servers_t & servers) = 0;
 
-    // To add local stream (got by GetUserMedia) into peer connection(got by CreatePeerConnection)
+    // To add local stream into peer connection,
+    //      which should be callbed after success of both GetUserMedia and CreatePeerConnection.
     // @return 0 if OK, else fail
     virtual long AddLocalStream() = 0;
 
     // To set render for local video, only valid after receiving IRtcSink::OnGetUserMedia()
-    // @param render: [in] UI Render
-    // @param action: [in] refer to action_t
+    // @param render: [in] object of UI Render
+    // @param action: [in] operation of UI Render, refer to action_t
     // @return 0 if OK, else fail
     virtual long SetLocalRender(IRtcRender *render, int action) = 0;
 
     // To set render for remote video, only valid after receiving IRtcSink::OnRemoteStream()
-    // @param render: [in] UI Render
-    // @param action: [in] refer to action_t
+    // @param render: [in] object of UI Render
+    // @param action: [in] operation of UI Render, refer to action_t
     // @return 0 if OK, else fail
     virtual long SetRemoteRender(IRtcRender *render, int action) = 0;
 
@@ -317,17 +354,17 @@ public:
     virtual void Close() = 0;
 
     // To set sdp of local media into current peer connection
-    // @param sdp:  [in] sdp of local media (json format, type: offer/pranswer/answer)
+    // @param sdp: [in] sdp of local media (json format, type: offer/pranswer/answer)
     // @return 0 if OK, else fail
     virtual long SetLocalDescription(const std::string &sdp) = 0;
 
     // To set sdp of remote peer into current peer connection
-    // @param sdp:  [in] sdp of remote media (json format, type: offer/pranswer/answer)
+    // @param sdp: [in] sdp of remote media (json format, type: offer/pranswer/answer)
     // @return 0 if OK, else fail
     virtual long SetRemoteDescription(const std::string &sdp) = 0;
 
     // To add remote ice candidate into current peer connection
-    // @param candidate:     [in] ice candidate(json format)
+    // @param candidate: [in] ice candidate(json format)
     // @return 0 if OK, else fail
     virtual long AddIceCandidate(const std::string &candidate) = 0;
 };
